@@ -35,7 +35,7 @@ function showScreen(name) {
 }
 
 function showApp() {
-  if (API.auth.isAdmin()) {
+  if (API.auth.isAdmin) {
     showScreen('admin');
     initAdmin();
     // Toon ook de nav-tab voor medewerker zodat admin kan wisselen
@@ -53,7 +53,7 @@ function showApp() {
   document.getElementById('nav-avatar').textContent = (u?.naam || 'G').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
 
   // Admin tab alleen tonen voor admin
-  if (!API.auth.isAdmin()) {
+  if (!API.auth.isAdmin) {
     document.getElementById('nav-admin-tab').style.display = 'none';
   }
 }
