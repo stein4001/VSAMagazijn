@@ -48,7 +48,8 @@ async function req(method, path, body) {
 export const login = (email, wachtwoord) => req('POST', '/auth/login', { email, wachtwoord });
 
 // ── ARTIKELEN ─────────────────────────────────────────────────────────────────
-export const getArtikelen  = (q)    => req('GET', `/artikelen${q ? '?q=' + encodeURIComponent(q) : ''}`);
+export const getArtikelen    = (q)    => req('GET', `/artikelen${q ? '?q=' + encodeURIComponent(q) : ''}`);
+export const getCategorieen  = ()     => req('GET', '/artikelen/categorieen/lijst');
 export const getArtikelQR  = (code) => req('GET', `/artikelen/qr/${encodeURIComponent(code)}`);
 export const getArtikel    = (id)   => req('GET', `/artikelen/${id}`);
 export const createArtikel = (body) => req('POST', '/artikelen', body);

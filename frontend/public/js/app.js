@@ -502,7 +502,7 @@ const artBg = ['#f5e8d5','#d5e8f5','#f5f5d5','#d5f5e8','#f5d5e8','#e8d5f5','#d5f
 
 async function loadAdminArtikelen() {
   const body = document.getElementById('art-tbody');
-  body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text3)">Laden…</td></tr>';
+  body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3)">Laden…</td></tr>';
   try {
     const arts = await API.getArtikelen();
     body.innerHTML = arts.map((a,i) => `
@@ -515,16 +515,32 @@ async function loadAdminArtikelen() {
         <td style="color:var(--text2)">${esc(a.eenheid)}</td>
         <td style="color:var(--text2)">${esc(a.categorie||'—')}</td>
         <td><a href="/api/artikelen/${a.id}/qr-image" target="_blank" onclick="event.stopPropagation()" style="font-size:12px;color:var(--blue);font-weight:600;text-decoration:none">QR ↗</a></td>
+        <td><button class="pick-del" title="Verwijderen" onclick="event.stopPropagation();verwijderArtikel('${a.id}','${esc(a.naam)}')">✕</button></td>
       </tr>`).join('');
   } catch (err) { showToast(err.message, true); }
 }
 
+window.verwijderArtikel = async function(id, naam) {
+  if (!confirm(`Artikel "${naam}" verwijderen?`)) return;
+  try {
+    await API.deleteArtikel(id);
+    loadAdminArtikelen();
+    showToast('✓ Artikel verwijderd');
+  } catch (err) { showToast(err.message, true); }
+};
+
 window.openArtikelModal = async function(id) {
-  const art = id === 'new' ? {} : await API.getArtikel(id);
+  const [art, cats] = await Promise.all([
+    id === 'new' ? Promise.resolve({}) : API.getArtikel(id),
+    API.getCategorieen().catch(() => []),
+  ]);
+  // Datalist vullen met bestaande categorieën
+  document.getElementById('cat-datalist').innerHTML =
+    cats.map(c => `<option value="${esc(c)}">`).join('');
   document.getElementById('art-modal-title').textContent = id === 'new' ? 'Nieuw artikel' : art.naam;
   document.getElementById('art-id').value = id === 'new' ? '' : id;
   document.getElementById('art-qr').value = art.qr_code || '';
-  document.getElementById('art-qr').disabled = !!art.id; // niet wijzigen als bestaand
+  document.getElementById('art-qr').disabled = !!art.id;
   document.getElementById('art-naam').value = art.naam || '';
   document.getElementById('art-omschrijving').value = art.omschrijving || '';
   document.getElementById('art-eenheid').value = art.eenheid || 'stuk';
@@ -567,7 +583,7 @@ async function loadGebruikers() {
         <td style="color:var(--text2);font-size:12px">${esc(u.email)}</td>
         <td><span class="badge ${u.rol==='admin'?'b-purple':'b-blue'}" style="${u.rol==='admin'?'background:rgba(139,92,246,.12);color:#8b5cf6;':''}">${u.rol}</span></td>
         <td><span class="badge ${u.actief?'b-green':'b-orange'}">${u.actief?'Actief':'Inactief'}</span></td>
-        <td><button class="retour-action" onclick="openGebruikerModal('${u.id}')">Wijzig ›</button></td>
+        <td><button class="retour-action" style="background:none;border:none;padding:0" onclick="openGebruikerModal('${u.id}')">Wijzig ›</button></td>
       </tr>`).join('');
   } catch (err) { showToast(err.message, true); }
 }
