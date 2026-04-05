@@ -33,24 +33,16 @@
         <div class="form-group">
           <label class="form-label" for="login-email">E-mailadres</label>
           <input class="form-input" id="login-email" type="email" placeholder="naam@bedrijf.nl"
-            value="jan@magazijn.nl" autocomplete="email" required>
+            autocomplete="email" required>
         </div>
         <div class="form-group">
           <label class="form-label" for="login-pw">Wachtwoord</label>
           <input class="form-input" id="login-pw" type="password" placeholder="••••••••"
-            value="jan123" autocomplete="current-password" required>
+            autocomplete="current-password" required>
         </div>
         <div class="form-error" id="login-error"></div>
         <button class="btn-primary" id="login-btn" type="submit">Inloggen</button>
       </form>
-
-      <div style="margin-top:20px;padding:14px;background:rgba(58,123,213,.08);border-radius:14px;border:1px solid rgba(58,123,213,.15)">
-        <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">Demo accounts</div>
-        <div style="font-size:12px;color:var(--text2);display:grid;gap:4px">
-          <div>👤 <strong>jan@magazijn.nl</strong> / jan123 <span style="color:var(--text3)">(medewerker)</span></div>
-          <div>🛡️ <strong>admin@magazijn.nl</strong> / admin123 <span style="color:var(--text3)">(admin)</span></div>
-        </div>
-      </div>
     </div>
   </div>
 </div>
@@ -65,12 +57,15 @@
       Magazijn
     </div>
     <div class="nav-pill">
-      <button class="nav-tab active" id="nav-worker-tab">Medewerker</button>
-      <button class="nav-tab" id="nav-admin-tab">Admin</button>
+      <button class="nav-tab active" id="nav-worker-tab" onclick="switchNavTab('main');initWorker()">Medewerker</button>
+      <button class="nav-tab" id="nav-admin-tab" onclick="switchNavTab('admin');initAdmin()">Admin</button>
     </div>
-    <div class="nav-user" id="logout-btn">
-      <div class="avatar" id="nav-avatar">JV</div>
-      <span id="nav-naam">Gebruiker</span>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="nav-user" style="cursor:default;pointer-events:none">
+        <div class="avatar" id="nav-avatar">JV</div>
+        <span id="nav-naam">Gebruiker</span>
+      </div>
+      <button onclick="doLogout()" style="background:rgba(0,0,0,.07);border:none;border-radius:50px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text2)">Uitloggen</button>
     </div>
   </nav>
 </div>
@@ -279,10 +274,16 @@
 
     <!-- GEBRUIKERS -->
     <div id="atab-gebruikers" style="display:none">
+      <div class="filter-row">
+        <button class="add-btn" onclick="openGebruikerModal('new')"
+          style="height:38px;font-size:13px;flex:0 0 auto;padding:0 20px">
+          + Nieuwe gebruiker
+        </button>
+      </div>
       <div class="tbl-wrap">
         <table>
           <thead><tr>
-            <th>Naam</th><th>E-mail</th><th>Rol</th><th>Status</th>
+            <th>Naam</th><th>E-mail</th><th>Rol</th><th>Status</th><th></th>
           </tr></thead>
           <tbody id="geb-tbody"></tbody>
         </table>
@@ -323,8 +324,12 @@
     <form id="art-form">
       <input type="hidden" id="art-id">
       <div class="form-group">
+        <label class="form-label">QR-code / artikelcode</label>
+        <input class="form-input" id="art-qr" placeholder="Bijv. ACT1990 (leeg = automatisch)" autocapitalize="characters">
+      </div>
+      <div class="form-group">
         <label class="form-label">Naam</label>
-        <input class="form-input" id="art-naam" required placeholder="Bijv. Boormachine 18V">
+        <input class="form-input" id="art-naam" required placeholder="Bijv. UTP CAT6 1,5M Blauw">
       </div>
       <div class="form-group">
         <label class="form-label">Omschrijving</label>
@@ -353,18 +358,53 @@
   </div>
 </div>
 
+<!-- Gebruiker modal -->
+<div class="modal-bg" id="geb-modal">
+  <div class="modal" style="border-radius:var(--r-xl)">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div class="modal-title" id="geb-modal-title">Gebruiker</div>
+      <button id="geb-modal-close" style="background:rgba(0,0,0,.06);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:16px">✕</button>
+    </div>
+    <form id="geb-form">
+      <input type="hidden" id="geb-id">
+      <div class="form-group">
+        <label class="form-label">Volledige naam</label>
+        <input class="form-input" id="geb-naam" required placeholder="Bijv. Jan Jansen">
+      </div>
+      <div class="form-group">
+        <label class="form-label">E-mailadres</label>
+        <input class="form-input" id="geb-email" type="email" required placeholder="jan@bedrijf.nl">
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="geb-pw-label">Wachtwoord</label>
+        <input class="form-input" id="geb-wachtwoord" type="password" placeholder="Nieuw wachtwoord">
+        <div id="geb-pw-hint" style="font-size:11px;color:var(--text3);margin-top:4px;display:none">Leeglaten om wachtwoord niet te wijzigen</div>
+      </div>
+      <div class="art-form-grid">
+        <div class="form-group">
+          <label class="form-label">Rol</label>
+          <select class="form-input" id="geb-rol">
+            <option value="medewerker">Medewerker</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div class="form-group" id="geb-actief-wrap">
+          <label class="form-label">Status</label>
+          <select class="form-input" id="geb-actief">
+            <option value="1">Actief</option>
+            <option value="0">Inactief</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-primary" type="submit" style="margin-top:14px">Opslaan</button>
+    </form>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<!-- Nav injecteren in schermen -->
-<script>
-  // Herhaal de nav in elk scherm na login
-  document.addEventListener('DOMContentLoaded', () => {
-    const nav = document.getElementById('app-nav');
-    document.getElementById('screen-main').prepend(nav.cloneNode(true));
-    document.getElementById('screen-admin').prepend(nav.cloneNode(true));
-  });
-</script>
 
 <script type="module" src="/js/app.js"></script>
 </body>

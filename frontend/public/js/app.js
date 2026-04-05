@@ -32,29 +32,22 @@ function showScreen(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const el = document.getElementById('screen-' + name);
   if (el) el.classList.add('active');
+  document.getElementById('app-nav').style.display = name === 'login' ? 'none' : '';
 }
 
 function showApp() {
-  if (API.auth.isAdmin) {
-    showScreen('admin');
-    initAdmin();
-    // Toon ook de nav-tab voor medewerker zodat admin kan wisselen
-    document.getElementById('nav-worker-tab').style.display = '';
-  } else {
-    showScreen('main');
-    initWorker();
-    document.getElementById('nav-worker-tab').style.display = '';
-    document.getElementById('nav-admin-tab').style.display = 'none';
-  }
-
   // Gebruikersnaam in nav
   const u = API.auth.user;
   document.getElementById('nav-naam').textContent = u?.naam?.split(' ')[0] || 'Gebruiker';
   document.getElementById('nav-avatar').textContent = (u?.naam || 'G').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('nav-admin-tab').style.display = API.auth.isAdmin ? '' : 'none';
 
-  // Admin tab alleen tonen voor admin
-  if (!API.auth.isAdmin) {
-    document.getElementById('nav-admin-tab').style.display = 'none';
+  if (API.auth.isAdmin) {
+    showScreen('admin');
+    initAdmin();
+  } else {
+    showScreen('main');
+    initWorker();
   }
 }
 
@@ -83,28 +76,23 @@ document.getElementById('login-form')?.addEventListener('submit', async (e) => {
   }
 });
 
-document.getElementById('logout-btn')?.addEventListener('click', () => {
-  API.auth.clear();
-  showScreen('login');
-  stopScanner();
-});
-
 // ── NAV TABS ─────────────────────────────────────────────────────────────────
-document.getElementById('nav-worker-tab')?.addEventListener('click', () => {
-  switchNavTab('main');
-  initWorker();
-});
-document.getElementById('nav-admin-tab')?.addEventListener('click', () => {
-  switchNavTab('admin');
-  initAdmin();
-});
 
-function switchNavTab(active) {
+window.switchNavTab = function switchNavTab(active) {
   showScreen(active);
   document.getElementById('nav-worker-tab').classList.toggle('active', active === 'main');
   document.getElementById('nav-admin-tab').classList.toggle('active', active === 'admin');
   if (active !== 'main') stopScanner();
-}
+};
+
+window.doLogout = function() {
+  API.auth.clear();
+  stopScanner();
+  showScreen('login');
+};
+
+window.initWorker = initWorker;
+window.initAdmin  = initAdmin;
 
 // ══════════════════════════════════════════════════════════════════════════════
 // MEDEWERKER
@@ -165,7 +153,18 @@ async function handleScanResult(code) {
     const artikel = await API.getArtikelQR(code);
     showScannedArtikel(artikel);
   } catch {
-    showToast('Artikel niet gevonden: ' + code, true);
+    // Artikel niet in DB — maak automatisch aan op basis van QR-inhoud
+    // QR formaat: "ACT1990 UTP CAT6 1,5M Blauw" → eerste woord = code, rest = naam
+    const parts = code.trim().split(/\s+/);
+    const qr_code = parts[0];
+    const naam = parts.length > 1 ? parts.slice(1).join(' ') : code;
+    try {
+      const nieuw = await API.createArtikel({ naam, qr_code, eenheid: 'stuk' });
+      showToast('Nieuw artikel aangemaakt: ' + naam);
+      showScannedArtikel(nieuw);
+    } catch (err2) {
+      showToast('Kan artikel niet aanmaken: ' + err2.message, true);
+    }
   }
 }
 
@@ -524,6 +523,8 @@ window.openArtikelModal = async function(id) {
   const art = id === 'new' ? {} : await API.getArtikel(id);
   document.getElementById('art-modal-title').textContent = id === 'new' ? 'Nieuw artikel' : art.naam;
   document.getElementById('art-id').value = id === 'new' ? '' : id;
+  document.getElementById('art-qr').value = art.qr_code || '';
+  document.getElementById('art-qr').disabled = !!art.id; // niet wijzigen als bestaand
   document.getElementById('art-naam').value = art.naam || '';
   document.getElementById('art-omschrijving').value = art.omschrijving || '';
   document.getElementById('art-eenheid').value = art.eenheid || 'stuk';
@@ -540,6 +541,8 @@ document.getElementById('art-form')?.addEventListener('submit', async (e) => {
     eenheid: document.getElementById('art-eenheid').value,
     categorie: document.getElementById('art-categorie').value,
   };
+  const qrVal = document.getElementById('art-qr').value.trim();
+  if (!id && qrVal) body.qr_code = qrVal;
   try {
     if (id) await API.updateArtikel(id, body);
     else    await API.createArtikel(body);
@@ -555,7 +558,7 @@ document.getElementById('art-modal-close')?.addEventListener('click', () =>
 // ── ADMIN GEBRUIKERS ──────────────────────────────────────────────────────────
 async function loadGebruikers() {
   const body = document.getElementById('geb-tbody');
-  body.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text3)">Laden…</td></tr>';
+  body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text3)">Laden…</td></tr>';
   try {
     const users = await API.getGebruikers();
     body.innerHTML = users.map(u => `
@@ -564,9 +567,53 @@ async function loadGebruikers() {
         <td style="color:var(--text2);font-size:12px">${esc(u.email)}</td>
         <td><span class="badge ${u.rol==='admin'?'b-purple':'b-blue'}" style="${u.rol==='admin'?'background:rgba(139,92,246,.12);color:#8b5cf6;':''}">${u.rol}</span></td>
         <td><span class="badge ${u.actief?'b-green':'b-orange'}">${u.actief?'Actief':'Inactief'}</span></td>
+        <td><button class="retour-action" onclick="openGebruikerModal('${u.id}')">Wijzig ›</button></td>
       </tr>`).join('');
   } catch (err) { showToast(err.message, true); }
 }
+
+window.openGebruikerModal = async function(id) {
+  const isNew = id === 'new';
+  let u = {};
+  if (!isNew) {
+    const users = await API.getGebruikers();
+    u = users.find(x => x.id === id) || {};
+  }
+  document.getElementById('geb-modal-title').textContent = isNew ? 'Nieuwe gebruiker' : 'Gebruiker wijzigen';
+  document.getElementById('geb-id').value = isNew ? '' : id;
+  document.getElementById('geb-naam').value = u.naam || '';
+  document.getElementById('geb-email').value = u.email || '';
+  document.getElementById('geb-wachtwoord').value = '';
+  document.getElementById('geb-wachtwoord').required = isNew;
+  document.getElementById('geb-pw-hint').style.display = isNew ? 'none' : '';
+  document.getElementById('geb-rol').value = u.rol || 'medewerker';
+  document.getElementById('geb-actief').value = u.actief !== undefined ? String(u.actief) : '1';
+  document.getElementById('geb-actief-wrap').style.display = isNew ? 'none' : '';
+  document.getElementById('geb-modal').classList.add('open');
+};
+
+document.getElementById('geb-form')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id = document.getElementById('geb-id').value;
+  const body = {
+    naam: document.getElementById('geb-naam').value,
+    email: document.getElementById('geb-email').value,
+    rol: document.getElementById('geb-rol').value,
+  };
+  const ww = document.getElementById('geb-wachtwoord').value;
+  if (ww) body.wachtwoord = ww;
+  if (id) body.actief = document.getElementById('geb-actief').value === '1';
+  try {
+    if (id) await API.updateGebruiker(id, body);
+    else    await API.createGebruiker(body);
+    document.getElementById('geb-modal').classList.remove('open');
+    loadGebruikers();
+    showToast('✓ Gebruiker opgeslagen');
+  } catch (err) { showToast(err.message, true); }
+});
+
+document.getElementById('geb-modal-close')?.addEventListener('click', () =>
+  document.getElementById('geb-modal').classList.remove('open'));
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 function statusMeta(status) {

@@ -66,15 +66,21 @@ router.get('/:id/qr-image', requireAdmin, async (req, res) => {
   }
 });
 
-// POST /api/artikelen — nieuw artikel (admin)
-router.post('/', requireAdmin, (req, res) => {
-  const { naam, omschrijving, eenheid, categorie, min_voorraad } = req.body;
+// POST /api/artikelen — nieuw artikel (alle ingelogde gebruikers mogen auto-aanmaken via scan)
+router.post('/', requireAuth, (req, res) => {
+  const { naam, omschrijving, eenheid, categorie, min_voorraad, qr_code: qrOverride } = req.body;
   if (!naam || !eenheid) {
     return res.status(400).json({ error: 'Naam en eenheid zijn verplicht' });
   }
 
+  // Als qr_code meegegeven en al bestaat → geef bestaande terug
+  if (qrOverride) {
+    const bestaand = db.prepare('SELECT * FROM artikelen WHERE qr_code = ? AND actief = 1').get(qrOverride);
+    if (bestaand) return res.json(bestaand);
+  }
+
   const id = uuid();
-  const qr_code = 'ART-' + Date.now().toString(36).toUpperCase();
+  const qr_code = qrOverride || ('ART-' + Date.now().toString(36).toUpperCase());
 
   db.prepare(`
     INSERT INTO artikelen (id, naam, omschrijving, qr_code, eenheid, categorie, min_voorraad)
