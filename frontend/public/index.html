@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#dde5f0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Magazijn</title>
+  <link rel="manifest" href="/manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/app.css">
+  <!-- QR scanner library -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     LOGIN
+══════════════════════════════════════ -->
+<div class="screen active" id="screen-login">
+  <div class="login-wrap">
+    <div class="login-card glass-strong">
+      <div class="login-logo">
+        <div class="login-logo-icon">📦</div>
+        <div>
+          <div class="login-title">Magazijn</div>
+          <div class="login-sub">Materiaal beheer systeem</div>
+        </div>
+      </div>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label class="form-label" for="login-email">E-mailadres</label>
+          <input class="form-input" id="login-email" type="email" placeholder="naam@bedrijf.nl"
+            value="jan@magazijn.nl" autocomplete="email" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="login-pw">Wachtwoord</label>
+          <input class="form-input" id="login-pw" type="password" placeholder="••••••••"
+            value="jan123" autocomplete="current-password" required>
+        </div>
+        <div class="form-error" id="login-error"></div>
+        <button class="btn-primary" id="login-btn" type="submit">Inloggen</button>
+      </form>
+
+      <div style="margin-top:20px;padding:14px;background:rgba(58,123,213,.08);border-radius:14px;border:1px solid rgba(58,123,213,.15)">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">Demo accounts</div>
+        <div style="font-size:12px;color:var(--text2);display:grid;gap:4px">
+          <div>👤 <strong>jan@magazijn.nl</strong> / jan123 <span style="color:var(--text3)">(medewerker)</span></div>
+          <div>🛡️ <strong>admin@magazijn.nl</strong> / admin123 <span style="color:var(--text3)">(admin)</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     NAV (gedeeld)
+══════════════════════════════════════ -->
+<div id="app-nav" style="display:none">
+  <nav class="nav">
+    <div class="nav-logo">
+      <div class="nav-logo-icon">📦</div>
+      Magazijn
+    </div>
+    <div class="nav-pill">
+      <button class="nav-tab active" id="nav-worker-tab">Medewerker</button>
+      <button class="nav-tab" id="nav-admin-tab">Admin</button>
+    </div>
+    <div class="nav-user" id="logout-btn">
+      <div class="avatar" id="nav-avatar">JV</div>
+      <span id="nav-naam">Gebruiker</span>
+    </div>
+  </nav>
+</div>
+
+<!-- ══════════════════════════════════════
+     MAIN (medewerker)
+══════════════════════════════════════ -->
+<div class="screen" id="screen-main">
+  <div id="app-nav-main"></div><!-- nav wordt hierboven apart bijgehouden -->
+  <div class="worker-wrap">
+
+    <!-- segment control -->
+    <div class="segment">
+      <button class="seg-btn active" onclick="workerTab('scan')">Scannen</button>
+      <button class="seg-btn" onclick="workerTab('lists')">Mijn lijsten</button>
+    </div>
+
+    <!-- ── SCAN TAB ── -->
+    <div id="wtab-scan">
+
+      <!-- Scanner card -->
+      <div class="card glass" style="padding:16px">
+        <div class="section-label">Artikel scannen</div>
+
+        <div class="scan-vp" id="scan-vp">
+          <div class="corner tl"></div><div class="corner tr"></div>
+          <div class="corner bl"></div><div class="corner br"></div>
+          <div class="scan-line" id="scan-line"></div>
+
+          <!-- Camera viewport -->
+          <div id="qr-reader"></div>
+
+          <!-- Placeholder -->
+          <div class="scan-placeholder" id="scan-placeholder">
+            <div class="scan-icon">⬛</div>
+            <div class="scan-text">Camera activeren</div>
+            <div class="scan-sub">of kies een artikel hieronder</div>
+          </div>
+
+          <!-- Resultaat na scan -->
+          <div class="scanned-result" id="scanned-result">
+            <div class="scan-badge">✓ Gescand</div>
+            <div class="scan-name" id="scanned-name">—</div>
+            <div class="scan-code" id="scanned-code">—</div>
+          </div>
+        </div>
+
+        <!-- Scan starten / handmatig -->
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <button class="add-btn" id="scan-start-btn" style="font-size:13px;height:40px;flex:1">
+            📷 Camera starten
+          </button>
+          <button class="add-btn" id="manual-qr-btn"
+            style="font-size:13px;height:40px;flex:1;background:rgba(255,255,255,.5);color:var(--text);box-shadow:none;border:1px solid rgba(255,255,255,.8)">
+            ⌨️ Handmatig
+          </button>
+        </div>
+
+        <!-- Handmatig invoer -->
+        <div id="manual-qr-wrap" style="display:none;margin-bottom:12px;display:none">
+          <div style="display:flex;gap:8px">
+            <input class="form-input" id="manual-qr-input" style="height:40px;font-size:13px"
+              placeholder="Bijv. ART-001" autocapitalize="characters">
+            <button class="add-btn" id="manual-qr-submit" style="height:40px;font-size:13px;flex:0 0 80px">
+              Zoek
+            </button>
+          </div>
+        </div>
+
+        <!-- Snelknoppen (demo) -->
+        <div class="section-label" style="margin-top:4px">Of kies direct</div>
+        <div class="qr-grid" id="artikel-grid">
+          <!-- Wordt gevuld door JS na laden artikelen -->
+          <div style="grid-column:1/-1;color:var(--text3);font-size:12px;text-align:center;padding:12px">Artikelen laden…</div>
+        </div>
+      </div>
+
+      <!-- Aantal card -->
+      <div class="card glass" id="amt-card" style="opacity:.4;pointer-events:none;transition:opacity .3s">
+        <div class="section-label">Aantal invoeren</div>
+        <div class="amount-group">
+          <div class="stepper">
+            <button class="step-btn" id="qty-minus">−</button>
+            <input class="step-val" id="qty-input" type="number" value="1" min="1">
+            <button class="step-btn" id="qty-plus">+</button>
+          </div>
+          <div class="unit-tag" id="unit-tag">stuk</div>
+          <button class="add-btn" id="add-btn" disabled>+ Voeg toe</button>
+        </div>
+      </div>
+
+      <!-- Picklijst -->
+      <div class="card glass">
+        <div class="pick-header">
+          <h3>Picklijst</h3>
+          <span class="pill-count" id="pick-count">0 artikelen</span>
+        </div>
+        <div id="pick-items">
+          <div class="list-empty">Scan een artikel om te beginnen</div>
+        </div>
+      </div>
+
+      <button class="send-btn" id="send-btn" disabled>Verstuur picklijst</button>
+    </div>
+
+    <!-- ── MIJN LIJSTEN TAB ── -->
+    <div id="wtab-lists" style="display:none">
+      <div class="section-label">Mijn picklijsten</div>
+      <div id="my-lists"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     ADMIN
+══════════════════════════════════════ -->
+<div class="screen" id="screen-admin">
+  <div class="admin-wrap">
+    <div class="admin-head">
+      <div class="admin-title">Dashboard</div>
+      <div class="admin-sub">Magazijn beheer overzicht</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat glass" style="background:linear-gradient(135deg,rgba(58,123,213,.15),rgba(58,123,213,.06))">
+        <div class="stat-num" id="stat-actief" style="color:var(--blue)">—</div>
+        <div class="stat-lbl">Actieve lijsten</div>
+        <div class="stat-glyph">📋</div>
+      </div>
+      <div class="stat glass" style="background:linear-gradient(135deg,rgba(232,118,42,.15),rgba(232,118,42,.06))">
+        <div class="stat-num" id="stat-wacht" style="color:var(--orange)">—</div>
+        <div class="stat-lbl">Wacht op retour</div>
+        <div class="stat-glyph">⏳</div>
+      </div>
+      <div class="stat glass" style="background:linear-gradient(135deg,rgba(37,160,106,.15),rgba(37,160,106,.06))">
+        <div class="stat-num" id="stat-vandaag" style="color:var(--green)">—</div>
+        <div class="stat-lbl">Afgerond vandaag</div>
+        <div class="stat-glyph">✅</div>
+      </div>
+      <div class="stat glass" style="background:linear-gradient(135deg,rgba(139,92,246,.15),rgba(139,92,246,.06))">
+        <div class="stat-num" id="stat-verbruik" style="color:var(--purple)">—</div>
+        <div class="stat-lbl">Verbruik deze week</div>
+        <div class="stat-glyph">📊</div>
+      </div>
+    </div>
+
+    <!-- Admin segment -->
+    <div class="admin-seg">
+      <button class="aseg active" data-tab="lists"      onclick="adminTab('lists')">Picklijsten</button>
+      <button class="aseg"        data-tab="verbruik"   onclick="adminTab('verbruik')">Verbruik</button>
+      <button class="aseg"        data-tab="artikelen"  onclick="adminTab('artikelen')">Artikelen</button>
+      <button class="aseg"        data-tab="gebruikers" onclick="adminTab('gebruikers')">Gebruikers</button>
+    </div>
+
+    <!-- PICKLIJSTEN -->
+    <div id="atab-lists">
+      <div class="filter-row">
+        <select class="fsel" onchange="filterAdmin(this.value)">
+          <option value="">Alle statussen</option>
+          <option value="actief">Actief</option>
+          <option value="wacht_retour">Wacht op retour</option>
+          <option value="afgerond">Afgerond</option>
+        </select>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>ID</th><th>Medewerker</th><th>Aangemaakt</th><th>Artikelen</th><th>Status</th><th></th>
+          </tr></thead>
+          <tbody id="admin-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- VERBRUIK -->
+    <div id="atab-verbruik" style="display:none">
+      <div class="chart-card glass">
+        <div class="chart-title">Top verbruikte artikelen</div>
+        <div id="chart-art"><div style="color:var(--text3);font-size:13px">Laden…</div></div>
+      </div>
+      <div class="chart-card glass">
+        <div class="chart-title">Verbruik per medewerker</div>
+        <div id="chart-med"><div style="color:var(--text3);font-size:13px">Laden…</div></div>
+      </div>
+    </div>
+
+    <!-- ARTIKELEN -->
+    <div id="atab-artikelen" style="display:none">
+      <div class="filter-row">
+        <button class="add-btn" onclick="openArtikelModal('new')"
+          style="height:38px;font-size:13px;flex:0 0 auto;padding:0 20px">
+          + Nieuw artikel
+        </button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Artikel</th><th>QR-code</th><th>Eenheid</th><th>Categorie</th><th>QR</th>
+          </tr></thead>
+          <tbody id="art-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- GEBRUIKERS -->
+    <div id="atab-gebruikers" style="display:none">
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Naam</th><th>E-mail</th><th>Rol</th><th>Status</th>
+          </tr></thead>
+          <tbody id="geb-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODALS
+══════════════════════════════════════ -->
+
+<!-- Retour bottom sheet -->
+<div class="modal-bg" id="retour-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="retour-title">Retour verwerken</div>
+    <div class="modal-sub" id="retour-sub"></div>
+    <div id="retour-body"></div>
+    <div class="hr"></div>
+    <button class="send-btn" id="retour-confirm"
+      style="background:linear-gradient(135deg,var(--orange),#d06020);box-shadow:0 6px 24px rgba(232,118,42,.35)">
+      Bevestig retour &amp; sluit lijst
+    </button>
+    <button class="cancel-btn" id="retour-cancel">Annuleer</button>
+  </div>
+</div>
+
+<!-- Artikel modal -->
+<div class="modal-bg" id="art-modal">
+  <div class="modal" style="border-radius:var(--r-xl)">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div class="modal-title" id="art-modal-title">Artikel</div>
+      <button id="art-modal-close" style="background:rgba(0,0,0,.06);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:16px">✕</button>
+    </div>
+    <form id="art-form">
+      <input type="hidden" id="art-id">
+      <div class="form-group">
+        <label class="form-label">Naam</label>
+        <input class="form-input" id="art-naam" required placeholder="Bijv. Boormachine 18V">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Omschrijving</label>
+        <input class="form-input" id="art-omschrijving" placeholder="Optionele omschrijving">
+      </div>
+      <div class="art-form-grid">
+        <div class="form-group">
+          <label class="form-label">Eenheid</label>
+          <select class="form-input" id="art-eenheid">
+            <option>stuk</option><option>rol</option><option>zak</option>
+            <option>vel</option><option>paar</option><option>doos</option><option>meter</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Categorie</label>
+          <select class="form-input" id="art-categorie">
+            <option value="">— geen —</option>
+            <option>Gereedschap</option><option>Elektra</option>
+            <option>Verbruiksartikelen</option><option>PBM</option>
+            <option>Bevestigingsmateriaal</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-primary" type="submit" style="margin-top:14px">Opslaan</button>
+    </form>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Nav injecteren in schermen -->
+<script>
+  // Herhaal de nav in elk scherm na login
+  document.addEventListener('DOMContentLoaded', () => {
+    const nav = document.getElementById('app-nav');
+    document.getElementById('screen-main').prepend(nav.cloneNode(true));
+    document.getElementById('screen-admin').prepend(nav.cloneNode(true));
+  });
+</script>
+
+<script type="module" src="/js/app.js"></script>
+</body>
+</html>
