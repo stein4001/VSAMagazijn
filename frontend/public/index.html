@@ -135,26 +135,28 @@
           </div>
         </div>
 
-        <!-- Snelknoppen (demo) -->
-        <div class="section-label" style="margin-top:4px">Of kies direct</div>
-        <div class="qr-grid" id="artikel-grid">
-          <!-- Wordt gevuld door JS na laden artikelen -->
-          <div style="grid-column:1/-1;color:var(--text3);font-size:12px;text-align:center;padding:12px">Artikelen laden…</div>
-        </div>
       </div>
 
       <!-- Aantal card -->
       <div class="card glass" id="amt-card" style="opacity:.4;pointer-events:none;transition:opacity .3s">
-        <div class="section-label">Aantal invoeren</div>
-        <div class="amount-group">
-          <div class="stepper">
-            <button class="step-btn" id="qty-minus">−</button>
-            <input class="step-val" id="qty-input" type="number" value="1" min="1">
-            <button class="step-btn" id="qty-plus">+</button>
+        <!-- Normale hoeveelheid (verborgen bij SN) -->
+        <div id="qty-wrap">
+          <div class="section-label">Aantal invoeren</div>
+          <div class="amount-group">
+            <div class="stepper">
+              <button class="step-btn" id="qty-minus">−</button>
+              <input class="step-val" id="qty-input" type="number" value="1" min="1">
+              <button class="step-btn" id="qty-plus">+</button>
+            </div>
+            <div class="unit-tag" id="unit-tag">stuk</div>
           </div>
-          <div class="unit-tag" id="unit-tag">stuk</div>
-          <button class="add-btn" id="add-btn" disabled>+ Voeg toe</button>
         </div>
+        <!-- Serienummer invoer (alleen bij eenheid=SN) -->
+        <div id="sn-wrap" style="display:none">
+          <div class="section-label">Serienummer invoeren</div>
+          <input class="form-input" id="sn-input" placeholder="Scan of typ serienummer…" autocapitalize="characters" style="margin-bottom:12px">
+        </div>
+        <button class="add-btn" id="add-btn" disabled>+ Voeg toe</button>
       </div>
 
       <!-- Picklijst -->
@@ -341,6 +343,7 @@
           <select class="form-input" id="art-eenheid">
             <option>stuk</option><option>rol</option><option>zak</option>
             <option>vel</option><option>paar</option><option>doos</option><option>meter</option>
+            <option value="SN">SN (serienummer)</option>
           </select>
         </div>
         <div class="form-group">

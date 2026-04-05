@@ -104,7 +104,7 @@ router.post('/:id/regels', requireAuth, (req, res) => {
     return res.status(400).json({ error: 'Lijst is niet meer bewerkbaar' });
   }
 
-  const { artikel_id, meegenomen } = req.body;
+  const { artikel_id, meegenomen, serienummer } = req.body;
   if (!artikel_id || !meegenomen || meegenomen < 1) {
     return res.status(400).json({ error: 'artikel_id en meegenomen (>0) zijn verplicht' });
   }
@@ -112,21 +112,25 @@ router.post('/:id/regels', requireAuth, (req, res) => {
   const artikel = db.prepare('SELECT * FROM artikelen WHERE id = ? AND actief = 1').get(artikel_id);
   if (!artikel) return res.status(404).json({ error: 'Artikel niet gevonden' });
 
-  // Kijk of dit artikel al in de lijst zit — dan optellen
-  const bestaand = db.prepare(
-    'SELECT * FROM picklijst_regels WHERE picklijst_id = ? AND artikel_id = ?'
-  ).get(req.params.id, artikel_id);
+  // SN-artikelen: altijd nieuwe regel (elk serienummer is uniek)
+  // Overige artikelen: optellen als artikel al in lijst zit
+  if (!serienummer) {
+    const bestaand = db.prepare(
+      'SELECT * FROM picklijst_regels WHERE picklijst_id = ? AND artikel_id = ?'
+    ).get(req.params.id, artikel_id);
 
-  if (bestaand) {
-    db.prepare(
-      'UPDATE picklijst_regels SET meegenomen = meegenomen + ?, bijgewerkt = datetime("now") WHERE id = ?'
-    ).run(meegenomen, bestaand.id);
-  } else {
-    db.prepare(`
-      INSERT INTO picklijst_regels (id, picklijst_id, artikel_id, meegenomen)
-      VALUES (?, ?, ?, ?)
-    `).run(uuid(), req.params.id, artikel_id, meegenomen);
+    if (bestaand) {
+      db.prepare(
+        'UPDATE picklijst_regels SET meegenomen = meegenomen + ?, bijgewerkt = datetime("now") WHERE id = ?'
+      ).run(meegenomen, bestaand.id);
+      return res.status(201).json(getPicklijstMetRegels(req.params.id));
+    }
   }
+
+  db.prepare(`
+    INSERT INTO picklijst_regels (id, picklijst_id, artikel_id, meegenomen, serienummer)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(uuid(), req.params.id, artikel_id, meegenomen, serienummer || null);
 
   res.status(201).json(getPicklijstMetRegels(req.params.id));
 });

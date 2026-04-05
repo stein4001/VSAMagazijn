@@ -169,6 +169,7 @@ async function handleScanResult(code) {
 }
 
 function showScannedArtikel(artikel) {
+  const isSN = artikel.eenheid === 'SN';
   document.getElementById('scanned-name').textContent  = artikel.naam;
   document.getElementById('scanned-code').textContent  = artikel.qr_code;
   document.getElementById('unit-tag').textContent      = artikel.eenheid;
@@ -176,6 +177,10 @@ function showScannedArtikel(artikel) {
   document.getElementById('scan-placeholder').style.display = 'none';
   document.getElementById('scan-vp').classList.add('scanned');
   document.getElementById('scan-start-btn').style.display = 'none';
+  // Toon qty-stepper of SN-invoer afhankelijk van eenheid
+  document.getElementById('qty-wrap').style.display = isSN ? 'none' : '';
+  document.getElementById('sn-wrap').style.display  = isSN ? '' : 'none';
+  document.getElementById('sn-input').value = '';
   document.getElementById('amt-card').style.opacity    = '1';
   document.getElementById('amt-card').style.pointerEvents = 'auto';
   document.getElementById('qty-input').value = 1;
@@ -195,6 +200,9 @@ function resetScanVP() {
   document.getElementById('add-btn').disabled = true;
   document.getElementById('manual-qr-wrap').style.display = 'none';
   document.getElementById('manual-qr-input').value = '';
+  document.getElementById('qty-wrap').style.display = '';
+  document.getElementById('sn-wrap').style.display = 'none';
+  document.getElementById('sn-input').value = '';
 }
 
 // Stepper
@@ -211,18 +219,26 @@ document.getElementById('qty-plus')?.addEventListener('click', () => {
 document.getElementById('add-btn')?.addEventListener('click', async () => {
   const btn = document.getElementById('add-btn');
   const artikelId = btn.dataset.artikelId;
-  const qty = parseInt(document.getElementById('qty-input').value) || 1;
+  const isSN = btn.dataset.eenheid === 'SN';
+  const qty = isSN ? 1 : (parseInt(document.getElementById('qty-input').value) || 1);
+  const sn = isSN ? document.getElementById('sn-input').value.trim() : null;
+
+  if (isSN && !sn) {
+    showToast('Vul een serienummer in', true);
+    return;
+  }
 
   btn.disabled = true;
 
   try {
-    // Maak lijst aan als er nog geen actieve is
     if (!activePicklijstId) {
       const lijst = await API.createPicklijst();
       activePicklijstId = lijst.id;
     }
 
-    await API.addRegel(activePicklijstId, { artikel_id: artikelId, meegenomen: qty });
+    const regelBody = { artikel_id: artikelId, meegenomen: qty };
+    if (sn) regelBody.serienummer = sn;
+    await API.addRegel(activePicklijstId, regelBody);
     await renderPicklist();
     resetScanVP();
   } catch (err) {
@@ -257,8 +273,8 @@ async function renderPicklist() {
   c.innerHTML = regels.map(r => `
     <div class="pick-item">
       <div class="pick-dot"></div>
-      <div class="pick-name">${esc(r.artikel_naam)}</div>
-      <div class="pick-qty">${r.meegenomen} ${esc(r.eenheid)}</div>
+      <div class="pick-name">${esc(r.artikel_naam)}${r.serienummer ? `<div style="font-size:11px;color:var(--text3);margin-top:2px">SN: ${esc(r.serienummer)}</div>` : ''}</div>
+      <div class="pick-qty">${r.eenheid === 'SN' ? esc(r.serienummer||'—') : `${r.meegenomen} ${esc(r.eenheid)}`}</div>
       <button class="pick-del" onclick="deleteRegel('${r.id}')">✕</button>
     </div>`).join('');
 }
@@ -583,7 +599,10 @@ async function loadGebruikers() {
         <td style="color:var(--text2);font-size:12px">${esc(u.email)}</td>
         <td><span class="badge ${u.rol==='admin'?'b-purple':'b-blue'}" style="${u.rol==='admin'?'background:rgba(139,92,246,.12);color:#8b5cf6;':''}">${u.rol}</span></td>
         <td><span class="badge ${u.actief?'b-green':'b-orange'}">${u.actief?'Actief':'Inactief'}</span></td>
-        <td><button class="retour-action" style="background:none;border:none;padding:0" onclick="openGebruikerModal('${u.id}')">Wijzig ›</button></td>
+        <td style="display:flex;gap:8px;align-items:center">
+          <button class="retour-action" style="background:none;border:none;padding:0" onclick="openGebruikerModal('${u.id}')">Wijzig ›</button>
+          <button class="pick-del" title="Verwijderen" onclick="verwijderGebruiker('${u.id}','${esc(u.naam)}')">✕</button>
+        </td>
       </tr>`).join('');
   } catch (err) { showToast(err.message, true); }
 }
@@ -606,6 +625,15 @@ window.openGebruikerModal = async function(id) {
   document.getElementById('geb-actief').value = u.actief !== undefined ? String(u.actief) : '1';
   document.getElementById('geb-actief-wrap').style.display = isNew ? 'none' : '';
   document.getElementById('geb-modal').classList.add('open');
+};
+
+window.verwijderGebruiker = async function(id, naam) {
+  if (!confirm(`Gebruiker "${naam}" deactiveren?`)) return;
+  try {
+    await API.deleteGebruiker(id);
+    loadGebruikers();
+    showToast('✓ Gebruiker gedeactiveerd');
+  } catch (err) { showToast(err.message, true); }
 };
 
 document.getElementById('geb-form')?.addEventListener('submit', async (e) => {

@@ -59,6 +59,7 @@ db.exec(`
     meegenomen    INTEGER NOT NULL DEFAULT 0,
     teruggekomen  INTEGER,          -- NULL = nog niet verwerkt
     verbruik      INTEGER,          -- berekend: meegenomen - teruggekomen
+    serienummer   TEXT,             -- alleen voor eenheid='SN'
     aangemaakt    TEXT NOT NULL DEFAULT (datetime('now')),
     bijgewerkt    TEXT
   );
