@@ -98,6 +98,7 @@ window.initAdmin  = initAdmin;
 // MEDEWERKER
 // ══════════════════════════════════════════════════════════════════════════════
 function initWorker() {
+  document.getElementById('klant-input').value = '';
   workerTab('scan');
 }
 
@@ -217,6 +218,13 @@ document.getElementById('qty-plus')?.addEventListener('click', () => {
   i.value = (parseInt(i.value)||1) + 1;
 });
 
+// ── KLANT ────────────────────────────────────────────────────────────────────
+document.getElementById('klant-input')?.addEventListener('blur', async () => {
+  if (!activePicklijstId) return;
+  const klant = document.getElementById('klant-input').value.trim();
+  try { await API.updatePicklijst(activePicklijstId, { klant: klant || null }); } catch {}
+});
+
 // ── PICKLIJST ─────────────────────────────────────────────────────────────────
 document.getElementById('add-btn')?.addEventListener('click', async () => {
   const btn = document.getElementById('add-btn');
@@ -234,7 +242,8 @@ document.getElementById('add-btn')?.addEventListener('click', async () => {
 
   try {
     if (!activePicklijstId) {
-      const lijst = await API.createPicklijst();
+      const klant = document.getElementById('klant-input').value.trim();
+      const lijst = await API.createPicklijst(klant ? { klant } : {});
       activePicklijstId = lijst.id;
     }
 
@@ -331,8 +340,8 @@ function listCardHtml(l) {
     <div class="list-icon ${s.ico}">${ico[s.ico]}</div>
     <div class="list-info">
       <div class="list-id">${esc(l.id)}</div>
-      <div class="list-name">${formatDatum(l.verstuurd_op || l.aangemaakt)}</div>
-      <div class="list-meta">${l.aantal_regels} artikel${l.aantal_regels !== 1 ? 'en' : ''} · ${l.totaal_meegenomen} stuks</div>
+      <div class="list-name">${l.klant ? esc(l.klant) : formatDatum(l.verstuurd_op || l.aangemaakt)}</div>
+      <div class="list-meta">${l.klant ? formatDatum(l.verstuurd_op || l.aangemaakt) + ' · ' : ''}${l.aantal_regels} artikel${l.aantal_regels !== 1 ? 'en' : ''} · ${l.totaal_meegenomen} stuks</div>
     </div>
     <span class="badge ${s.cls}"><span class="badge-dot"></span>${s.txt}</span>
     ${l.status==='wacht_retour' ? '<span style="color:var(--text3);font-size:16px">›</span>' : ''}
@@ -353,7 +362,7 @@ window.verwijderEigenLijst = async function(id) {
 window.openRetour = async function(id) {
   retourListId = id;
   const lijst = await API.getPicklijst(id);
-  document.getElementById('retour-title').textContent = 'Retour — ' + id;
+  document.getElementById('retour-title').textContent = lijst.klant ? `Retour — ${lijst.klant}` : 'Retour verwerken';
   document.getElementById('retour-sub').textContent = formatDatum(lijst.verstuurd_op) + ' · ' + lijst.gebruiker_naam;
 
   document.getElementById('retour-body').innerHTML = lijst.regels.map((r,i) => {
@@ -466,14 +475,14 @@ async function loadAdminStats() {
 
 async function loadAdminLists() {
   const body = document.getElementById('admin-tbody');
-  body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3)">Laden…</td></tr>';
+  body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">Laden…</td></tr>';
   try {
     const params = {};
     if (adminFilter) params.status = adminFilter;
     const lijsten = await API.getPicklijsten({ ...params, limit: 100 });
 
     if (!lijsten.length) {
-      body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3)">Geen lijsten gevonden</td></tr>';
+      body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">Geen lijsten gevonden</td></tr>';
       return;
     }
 
@@ -482,6 +491,7 @@ async function loadAdminLists() {
       return `<tr onclick="toggleExpand('${l.id}')">
         <td class="td-id">${esc(l.id)}</td>
         <td class="td-bold">${esc(l.gebruiker_naam)}</td>
+        <td style="font-size:12px">${l.klant ? `<span style="font-weight:700">${esc(l.klant)}</span>` : '<span style="color:var(--text3)">—</span>'}</td>
         <td style="font-size:12px;color:var(--text2)">${formatDatum(l.aangemaakt)}</td>
         <td style="font-size:12px;color:var(--text2)">${l.aantal_regels} art.</td>
         <td><span class="badge ${s.cls}"><span class="badge-dot"></span>${s.txt}</span></td>
@@ -491,7 +501,7 @@ async function loadAdminLists() {
         </td>
       </tr>
       <tr class="expand-row" id="exp-${l.id}">
-        <td colspan="6"><div class="expand-inner">
+        <td colspan="7"><div class="expand-inner">
           <div class="expand-lbl">Regels</div>
           <div class="chips" id="chips-${l.id}"><em style="font-size:12px;color:var(--text3)">Laden…</em></div>
         </div></td>

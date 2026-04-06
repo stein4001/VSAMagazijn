@@ -65,6 +65,7 @@ export const getPicklijst     = (id)          => req('GET',    `/picklijsten/${i
 export const createPicklijst  = (body = {})   => req('POST',   '/picklijsten', body);
 export const addRegel         = (id, body)    => req('POST',   `/picklijsten/${id}/regels`, body);
 export const deleteRegel      = (id, rId)     => req('DELETE', `/picklijsten/${id}/regels/${rId}`);
+export const updatePicklijst   = (id, body)   => req('PATCH',  `/picklijsten/${id}`, body);
 export const verstuurPicklijst = (id)         => req('POST',   `/picklijsten/${id}/verstuur`);
 export const verwerkRetour    = (id, regels)  => req('POST',   `/picklijsten/${id}/retour`, { regels });
 export const deletePicklijst   = (id)          => req('DELETE', `/picklijsten/${id}`);

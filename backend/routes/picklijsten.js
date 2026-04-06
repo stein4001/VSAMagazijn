@@ -82,13 +82,13 @@ router.get('/:id', requireAuth, (req, res) => {
 
 // POST /api/picklijsten — start nieuwe picklijst
 router.post('/', requireAuth, (req, res) => {
-  const { notities } = req.body;
+  const { notities, klant } = req.body;
   const id = uuid();
 
   db.prepare(`
-    INSERT INTO picklijsten (id, gebruiker_id, status, notities)
-    VALUES (?, ?, 'actief', ?)
-  `).run(id, req.user.id, notities || null);
+    INSERT INTO picklijsten (id, gebruiker_id, status, klant, notities)
+    VALUES (?, ?, 'actief', ?, ?)
+  `).run(id, req.user.id, klant || null, notities || null);
 
   res.status(201).json(getPicklijstMetRegels(id));
 });
@@ -149,6 +149,21 @@ router.delete('/:id/regels/:regelId', requireAuth, (req, res) => {
   db.prepare('DELETE FROM picklijst_regels WHERE id = ? AND picklijst_id = ?')
     .run(req.params.regelId, req.params.id);
   res.json({ ok: true });
+});
+
+// PATCH /api/picklijsten/:id — klant/notities updaten
+router.patch('/:id', requireAuth, (req, res) => {
+  const lijst = db.prepare('SELECT * FROM picklijsten WHERE id = ?').get(req.params.id);
+  if (!lijst) return res.status(404).json({ error: 'Lijst niet gevonden' });
+  if (lijst.gebruiker_id !== req.user.id && req.user.rol !== 'admin') {
+    return res.status(403).json({ error: 'Geen toegang' });
+  }
+  if (lijst.status !== 'actief') {
+    return res.status(400).json({ error: 'Lijst is niet meer bewerkbaar' });
+  }
+  const { klant } = req.body;
+  db.prepare("UPDATE picklijsten SET klant = ? WHERE id = ?").run(klant ?? lijst.klant, req.params.id);
+  res.json(getPicklijstMetRegels(req.params.id));
 });
 
 // POST /api/picklijsten/:id/verstuur — verstuur lijst (actief → wacht_retour)

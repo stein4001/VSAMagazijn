@@ -14,5 +14,6 @@ db.pragma('foreign_keys = ON');
 
 // Auto-migraties: kolommen toevoegen als ze nog niet bestaan
 try { db.prepare('ALTER TABLE picklijst_regels ADD COLUMN serienummer TEXT').run(); } catch {}
+try { db.prepare('ALTER TABLE picklijsten ADD COLUMN klant TEXT').run(); } catch {}
 
 module.exports = db;

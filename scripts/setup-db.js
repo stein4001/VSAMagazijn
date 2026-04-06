@@ -44,6 +44,7 @@ db.exec(`
     gebruiker_id  TEXT NOT NULL REFERENCES gebruikers(id),
     status        TEXT NOT NULL DEFAULT 'actief',
                   -- actief | wacht_retour | afgerond | geannuleerd
+    klant         TEXT,
     notities      TEXT,
     aangemaakt    TEXT NOT NULL DEFAULT (datetime('now')),
     verstuurd_op  TEXT,
