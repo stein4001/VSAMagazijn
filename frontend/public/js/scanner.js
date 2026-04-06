@@ -26,13 +26,25 @@ export class Scanner {
       // Voorkeur: back-camera
       const cam = cameras.find(c => /back|achter|environment/i.test(c.label)) || cameras[cameras.length - 1];
 
+      // Bereken qrbox op basis van de container breedte
+      const container = document.getElementById(this.containerId);
+      const w = container ? container.offsetWidth : 280;
+      const box = Math.round(Math.min(w * 0.7, 260));
+
       await this.instance.start(
         cam.id,
-        { fps: 10, qrbox: { width: 220, height: 220 }, aspectRatio: 1.333 },
-        (decodedText) => {
-          this.onResult(decodedText);
+        {
+          fps: 12,
+          qrbox: { width: box, height: box },
+          aspectRatio: 4/3,
+          disableFlip: false,
+          rememberLastUsedCamera: false,
+          showTorchButtonIfSupported: false,
+          showZoomSliderIfSupported: false,
+          defaultZoomValueIfSupported: 1,
         },
-        () => {} // ignore parse errors
+        (decodedText) => { this.onResult(decodedText); },
+        () => {}
       );
       this.running = true;
     } catch (err) {
