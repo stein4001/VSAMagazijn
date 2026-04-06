@@ -334,8 +334,18 @@ function listCardHtml(l) {
     </div>
     <span class="badge ${s.cls}"><span class="badge-dot"></span>${s.txt}</span>
     ${l.status==='wacht_retour' ? '<span style="color:var(--text3);font-size:16px">›</span>' : ''}
+    ${l.status==='actief' ? `<button class="pick-del" title="Verwijderen" onclick="event.stopPropagation();verwijderEigenLijst('${l.id}')">✕</button>` : ''}
   </div>`;
 }
+
+window.verwijderEigenLijst = async function(id) {
+  if (!confirm('Lege lijst annuleren?')) return;
+  try {
+    await API.annuleerPicklijst(id);
+    loadMyLists();
+    showToast('✓ Lijst geannuleerd');
+  } catch (err) { showToast(err.message, true); }
+};
 
 // ── RETOUR ────────────────────────────────────────────────────────────────────
 window.openRetour = async function(id) {
@@ -344,8 +354,23 @@ window.openRetour = async function(id) {
   document.getElementById('retour-title').textContent = 'Retour — ' + id;
   document.getElementById('retour-sub').textContent = formatDatum(lijst.verstuurd_op) + ' · ' + lijst.gebruiker_naam;
 
-  document.getElementById('retour-body').innerHTML = lijst.regels.map((r,i) => `
-    <div class="retour-item">
+  document.getElementById('retour-body').innerHTML = lijst.regels.map((r,i) => {
+    const isSN = r.eenheid === 'SN';
+    if (isSN) {
+      return `<div class="retour-item">
+        <div class="retour-name">${esc(r.artikel_naam)}</div>
+        <div class="retour-row"><div class="r-label">Serienummer</div><div class="r-mono" style="font-weight:700">${esc(r.serienummer||'—')}</div></div>
+        <div class="retour-row">
+          <div class="r-label">Teruggekomen</div>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="ri_${i}" data-regel="${r.id}" data-sn="1" checked
+              style="width:18px;height:18px;cursor:pointer" onchange="calcVSN(${i})">
+            <span id="rv_${i}" style="font-size:12px;color:var(--green);font-weight:600">Ja — geen verbruik</span>
+          </label>
+        </div>
+      </div>`;
+    }
+    return `<div class="retour-item">
       <div class="retour-name">${esc(r.artikel_naam)}</div>
       <div class="retour-row"><div class="r-label">Meegenomen</div><div class="r-mono">${r.meegenomen} ${esc(r.eenheid)}</div></div>
       <div class="retour-row">
@@ -355,9 +380,10 @@ window.openRetour = async function(id) {
         <span style="font-size:12px;color:var(--text3)">${esc(r.eenheid)}</span>
       </div>
       <div class="retour-row"><div class="r-label">Verbruik</div><div id="rv_${i}" class="v-zero">0 ${esc(r.eenheid)}</div></div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
-  lijst.regels.forEach((r,i) => calcV(i, r.meegenomen, r.eenheid));
+  lijst.regels.forEach((r,i) => { if (r.eenheid !== 'SN') calcV(i, r.meegenomen, r.eenheid); });
   document.getElementById('retour-modal').classList.add('open');
 };
 
@@ -370,12 +396,22 @@ window.calcV = function(i, max, e) {
   out.className = v > 0 ? 'v-pos' : 'v-zero';
 };
 
+window.calcVSN = function(i) {
+  const inp = document.getElementById('ri_' + i);
+  const out = document.getElementById('rv_' + i);
+  if (!inp || !out) return;
+  out.textContent = inp.checked ? 'Ja — geen verbruik' : 'Nee — verbruikt';
+  out.style.color = inp.checked ? 'var(--green)' : 'var(--orange)';
+};
+
 document.getElementById('retour-confirm')?.addEventListener('click', async () => {
-  const inputs = document.querySelectorAll('#retour-body .retour-input');
-  const regels = Array.from(inputs).map(inp => ({
-    id: inp.dataset.regel,
-    teruggekomen: Math.max(0, parseInt(inp.value)||0)
-  }));
+  const allInputs = document.querySelectorAll('#retour-body [data-regel]');
+  const regels = Array.from(allInputs).map(inp => {
+    if (inp.dataset.sn) {
+      return { id: inp.dataset.regel, teruggekomen: inp.checked ? 1 : 0 };
+    }
+    return { id: inp.dataset.regel, teruggekomen: Math.max(0, parseInt(inp.value)||0) };
+  });
 
   const btn = document.getElementById('retour-confirm');
   btn.disabled = true;
@@ -447,7 +483,10 @@ async function loadAdminLists() {
         <td style="font-size:12px;color:var(--text2)">${formatDatum(l.aangemaakt)}</td>
         <td style="font-size:12px;color:var(--text2)">${l.aantal_regels} art.</td>
         <td><span class="badge ${s.cls}"><span class="badge-dot"></span>${s.txt}</span></td>
-        <td>${l.status==='wacht_retour'?`<span class="retour-action" onclick="event.stopPropagation();openRetour('${l.id}')">Verwerk ›</span>`:''}</td>
+        <td style="display:flex;gap:8px;align-items:center">
+          ${l.status==='wacht_retour'?`<span class="retour-action" onclick="event.stopPropagation();openRetour('${l.id}')">Verwerk ›</span>`:''}
+          <button class="pick-del" title="Verwijderen" onclick="event.stopPropagation();verwijderPicklijst('${l.id}')">✕</button>
+        </td>
       </tr>
       <tr class="expand-row" id="exp-${l.id}">
         <td colspan="6"><div class="expand-inner">
@@ -470,19 +509,31 @@ window.toggleExpand = async function(id) {
     if (chipsEl.querySelector('em')) {
       try {
         const lijst = await API.getPicklijst(id);
-        chipsEl.innerHTML = lijst.regels.map(r => `
-          <div class="chip">
-            <div class="chip-name">${esc(r.artikel_naam)}</div>
-            <div class="chip-nums">
-              <span>↑ ${r.meegenomen}</span>
-              ${r.teruggekomen !== null
+        chipsEl.innerHTML = lijst.regels.map(r => {
+          const isSN = r.eenheid === 'SN';
+          const detail = isSN
+            ? `<span style="color:var(--text3);font-size:11px">SN: ${esc(r.serienummer||'—')}</span>`
+            : `<span>↑ ${r.meegenomen}</span>${r.teruggekomen !== null
                 ? `<span>↓ ${r.teruggekomen}</span><span class="chip-v">∑ ${r.verbruik}</span>`
-                : '<span style="color:var(--text3)">—</span>'}
-            </div>
-          </div>`).join('');
+                : '<span style="color:var(--text3)">—</span>'}`;
+          return `<div class="chip">
+            <div class="chip-name">${esc(r.artikel_naam)}</div>
+            <div class="chip-nums">${detail}</div>
+          </div>`;
+        }).join('');
       } catch {}
     }
   }
+};
+
+window.verwijderPicklijst = async function(id) {
+  if (!confirm('Picklijst verwijderen? Dit kan niet ongedaan worden gemaakt.')) return;
+  try {
+    await API.deletePicklijst(id);
+    loadAdminLists();
+    loadAdminStats();
+    showToast('✓ Picklijst verwijderd');
+  } catch (err) { showToast(err.message, true); }
 };
 
 window.filterAdmin = function(val) {

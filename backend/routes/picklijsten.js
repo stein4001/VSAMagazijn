@@ -216,6 +216,28 @@ router.post('/:id/retour', requireAuth, (req, res) => {
   res.json(getPicklijstMetRegels(req.params.id));
 });
 
+// POST /api/picklijsten/:id/annuleer — medewerker annuleert eigen actieve lijst
+router.post('/:id/annuleer', requireAuth, (req, res) => {
+  const lijst = db.prepare('SELECT * FROM picklijsten WHERE id = ?').get(req.params.id);
+  if (!lijst) return res.status(404).json({ error: 'Lijst niet gevonden' });
+  if (lijst.gebruiker_id !== req.user.id && req.user.rol !== 'admin') {
+    return res.status(403).json({ error: 'Geen toegang' });
+  }
+  if (lijst.status !== 'actief') {
+    return res.status(400).json({ error: 'Alleen actieve lijsten kunnen geannuleerd worden' });
+  }
+  db.prepare("UPDATE picklijsten SET status = 'geannuleerd' WHERE id = ?").run(req.params.id);
+  res.json({ ok: true });
+});
+
+// DELETE /api/picklijsten/:id — verwijder picklijst (admin)
+router.delete('/:id', requireAdmin, (req, res) => {
+  const lijst = db.prepare('SELECT * FROM picklijsten WHERE id = ?').get(req.params.id);
+  if (!lijst) return res.status(404).json({ error: 'Lijst niet gevonden' });
+  db.prepare('DELETE FROM picklijsten WHERE id = ?').run(req.params.id);
+  res.json({ ok: true });
+});
+
 // ── ADMIN ENDPOINTS ───────────────────────────────────────────────────────────
 
 // GET /api/picklijsten/admin/stats — dashboard statistieken
