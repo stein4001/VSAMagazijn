@@ -161,8 +161,9 @@ router.patch('/:id', requireAuth, (req, res) => {
   if (lijst.status !== 'actief') {
     return res.status(400).json({ error: 'Lijst is niet meer bewerkbaar' });
   }
-  const { klant } = req.body;
-  db.prepare("UPDATE picklijsten SET klant = ? WHERE id = ?").run(klant ?? lijst.klant, req.params.id);
+  const { klant, projectnummer } = req.body;
+  db.prepare("UPDATE picklijsten SET klant = ?, projectnummer = ? WHERE id = ?")
+    .run(klant ?? lijst.klant, projectnummer !== undefined ? projectnummer : lijst.projectnummer, req.params.id);
   res.json(getPicklijstMetRegels(req.params.id));
 });
 
@@ -223,11 +224,25 @@ router.post('/:id/retour', requireAuth, (req, res) => {
       updateRegel.run(terug, terug, r.id, req.params.id);
     }
     db.prepare(`
-      UPDATE picklijsten SET status = 'afgerond', gesloten_op = datetime('now') WHERE id = ?
+      UPDATE picklijsten SET status = 'wacht_verwerking', gesloten_op = datetime('now') WHERE id = ?
     `).run(req.params.id);
   });
 
   updateAll(regels);
+  res.json(getPicklijstMetRegels(req.params.id));
+});
+
+// POST /api/picklijsten/:id/afronden — admin bevestigt + projectnummer (wacht_verwerking → afgerond)
+router.post('/:id/afronden', requireAdmin, (req, res) => {
+  const lijst = db.prepare('SELECT * FROM picklijsten WHERE id = ?').get(req.params.id);
+  if (!lijst) return res.status(404).json({ error: 'Lijst niet gevonden' });
+  if (lijst.status !== 'wacht_verwerking') {
+    return res.status(400).json({ error: 'Lijst wacht niet op verwerking' });
+  }
+  const { projectnummer } = req.body;
+  db.prepare(`
+    UPDATE picklijsten SET status = 'afgerond', projectnummer = ? WHERE id = ?
+  `).run(projectnummer || null, req.params.id);
   res.json(getPicklijstMetRegels(req.params.id));
 });
 
@@ -258,8 +273,9 @@ router.delete('/:id', requireAdmin, (req, res) => {
 // GET /api/picklijsten/admin/stats — dashboard statistieken
 router.get('/admin/stats', requireAdmin, (req, res) => {
   const stats = {
-    actief:        db.prepare("SELECT COUNT(*) as n FROM picklijsten WHERE status='actief'").get().n,
-    wacht_retour:  db.prepare("SELECT COUNT(*) as n FROM picklijsten WHERE status='wacht_retour'").get().n,
+    actief:           db.prepare("SELECT COUNT(*) as n FROM picklijsten WHERE status='actief'").get().n,
+    wacht_retour:     db.prepare("SELECT COUNT(*) as n FROM picklijsten WHERE status='wacht_retour'").get().n,
+    wacht_verwerking: db.prepare("SELECT COUNT(*) as n FROM picklijsten WHERE status='wacht_verwerking'").get().n,
     afgerond_vandaag: db.prepare(
       "SELECT COUNT(*) as n FROM picklijsten WHERE status='afgerond' AND date(gesloten_op)=date('now')"
     ).get().n,

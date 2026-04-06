@@ -171,6 +171,7 @@ body {
 .b-blue   { background:var(--blue-l);   color:var(--blue);   } .b-blue   .badge-dot { background:var(--blue);   }
 .b-orange { background:var(--orange-l); color:var(--orange); } .b-orange .badge-dot { background:var(--orange); animation:blink 2s infinite; }
 .b-green  { background:var(--green-l);  color:var(--green);  } .b-green  .badge-dot { background:var(--green);  }
+.b-purple { background:rgba(139,92,246,.12); color:var(--purple); } .b-purple .badge-dot { background:var(--purple); animation:blink 2s infinite; }
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
 
 /* ── RETOUR ── */

@@ -329,9 +329,10 @@ async function loadMyLists() {
 
 function listCardHtml(l) {
   const sm = {
-    actief:       { cls:'b-blue',   txt:'Actief',           ico:'actief'  },
-    wacht_retour: { cls:'b-orange', txt:'Wacht op retour',  ico:'waiting' },
-    afgerond:     { cls:'b-green',  txt:'Afgerond',         ico:'done'    },
+    actief:           { cls:'b-blue',   txt:'Actief',               ico:'actief'  },
+    wacht_retour:     { cls:'b-orange', txt:'Wacht op retour',      ico:'waiting' },
+    wacht_verwerking: { cls:'b-purple', txt:'Wacht op verwerking',  ico:'waiting' },
+    afgerond:         { cls:'b-green',  txt:'Afgerond',             ico:'done'    },
   };
   const s = sm[l.status] || sm.actief;
   const ico = { actief:'📋', waiting:'⏳', done:'✅' };
@@ -466,10 +467,10 @@ window.adminTab = function(tab) {
 async function loadAdminStats() {
   try {
     const s = await API.getStats();
-    document.getElementById('stat-actief').textContent        = s.actief;
-    document.getElementById('stat-wacht').textContent         = s.wacht_retour;
-    document.getElementById('stat-vandaag').textContent       = s.afgerond_vandaag;
-    document.getElementById('stat-verbruik').textContent      = s.totaal_verbruik_week;
+    document.getElementById('stat-actief').textContent           = s.actief;
+    document.getElementById('stat-wacht').textContent            = s.wacht_retour;
+    document.getElementById('stat-vandaag').textContent          = s.afgerond_vandaag;
+    document.getElementById('stat-wacht-verwerking').textContent = s.wacht_verwerking;
   } catch {}
 }
 
@@ -497,6 +498,7 @@ async function loadAdminLists() {
         <td><span class="badge ${s.cls}"><span class="badge-dot"></span>${s.txt}</span></td>
         <td style="display:flex;gap:8px;align-items:center">
           ${l.status==='wacht_retour'?`<span class="retour-action" onclick="event.stopPropagation();openRetour('${l.id}')">Verwerk ›</span>`:''}
+          ${l.status==='wacht_verwerking'?`<span class="retour-action" style="color:var(--purple)" onclick="event.stopPropagation();openAfronden('${l.id}')">Rond af ›</span>`:''}
           <button class="pick-del" title="Verwijderen" onclick="event.stopPropagation();verwijderPicklijst('${l.id}')">✕</button>
         </td>
       </tr>
@@ -521,6 +523,10 @@ window.toggleExpand = async function(id) {
     if (chipsEl.querySelector('em')) {
       try {
         const lijst = await API.getPicklijst(id);
+        if (lijst.projectnummer) {
+          chipsEl.insertAdjacentHTML('beforebegin',
+            `<div style="font-size:11px;font-weight:700;color:var(--purple);margin-bottom:6px">Projectnummer: ${esc(lijst.projectnummer)}</div>`);
+        }
         chipsEl.innerHTML = lijst.regels.map(r => {
           const isSN = r.eenheid === 'SN';
           const detail = isSN
@@ -722,12 +728,52 @@ document.getElementById('geb-form')?.addEventListener('submit', async (e) => {
 document.getElementById('geb-modal-close')?.addEventListener('click', () =>
   document.getElementById('geb-modal').classList.remove('open'));
 
+// ── AFRONDEN (admin) ──────────────────────────────────────────────────────────
+let afrondListId = null;
+
+window.openAfronden = async function(id) {
+  afrondListId = id;
+  const lijst = await API.getPicklijst(id);
+  document.getElementById('afrond-sub').textContent =
+    (lijst.klant ? lijst.klant + ' · ' : '') + formatDatum(lijst.verstuurd_op) + ' · ' + lijst.gebruiker_naam;
+  document.getElementById('afrond-info').innerHTML = lijst.regels.map(r =>
+    `<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(0,0,0,.05)">
+      <span style="font-weight:600">${esc(r.artikel_naam)}</span>
+      <span>${r.eenheid==='SN' ? `SN: ${esc(r.serienummer||'—')}` : `↑${r.meegenomen} ↓${r.teruggekomen??'?'} ∑${r.verbruik??'?'} ${esc(r.eenheid)}`}</span>
+    </div>`
+  ).join('');
+  document.getElementById('afrond-projectnummer').value = lijst.projectnummer || '';
+  document.getElementById('afrond-modal').classList.add('open');
+};
+
+document.getElementById('afrond-confirm')?.addEventListener('click', async () => {
+  const btn = document.getElementById('afrond-confirm');
+  const projectnummer = document.getElementById('afrond-projectnummer').value.trim();
+  btn.disabled = true;
+  try {
+    await API.afrondPicklijst(afrondListId, projectnummer || null);
+    document.getElementById('afrond-modal').classList.remove('open');
+    loadAdminLists();
+    loadAdminStats();
+    showToast('✓ Lijst afgerond');
+  } catch (err) {
+    showToast(err.message, true);
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('afrond-cancel')?.addEventListener('click', () =>
+  document.getElementById('afrond-modal').classList.remove('open'));
+document.getElementById('afrond-modal-close')?.addEventListener('click', () =>
+  document.getElementById('afrond-modal').classList.remove('open'));
+
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 function statusMeta(status) {
   return {
-    actief:       { cls:'b-blue',   txt:'Actief'          },
-    wacht_retour: { cls:'b-orange', txt:'Wacht op retour' },
-    afgerond:     { cls:'b-green',  txt:'Afgerond'        },
+    actief:            { cls:'b-blue',   txt:'Actief'               },
+    wacht_retour:      { cls:'b-orange', txt:'Wacht op retour'      },
+    wacht_verwerking:  { cls:'b-purple', txt:'Wacht op verwerking'  },
+    afgerond:          { cls:'b-green',  txt:'Afgerond'             },
   }[status] || { cls:'b-blue', txt:status };
 }
 

@@ -215,9 +215,9 @@
         <div class="stat-glyph">✅</div>
       </div>
       <div class="stat glass" style="background:linear-gradient(135deg,rgba(139,92,246,.15),rgba(139,92,246,.06))">
-        <div class="stat-num" id="stat-verbruik" style="color:var(--purple)">—</div>
-        <div class="stat-lbl">Verbruik deze week</div>
-        <div class="stat-glyph">📊</div>
+        <div class="stat-num" id="stat-wacht-verwerking" style="color:var(--purple)">—</div>
+        <div class="stat-lbl">Wacht op verwerking</div>
+        <div class="stat-glyph">🔖</div>
       </div>
     </div>
 
@@ -236,6 +236,7 @@
           <option value="">Alle statussen</option>
           <option value="actief">Actief</option>
           <option value="wacht_retour">Wacht op retour</option>
+          <option value="wacht_verwerking">Wacht op verwerking</option>
           <option value="afgerond">Afgerond</option>
         </select>
       </div>
@@ -403,6 +404,27 @@
       </div>
       <button class="btn-primary" type="submit" style="margin-top:14px">Opslaan</button>
     </form>
+  </div>
+</div>
+
+<!-- Afronden modal (admin) -->
+<div class="modal-bg" id="afrond-modal">
+  <div class="modal" style="border-radius:var(--r-xl)">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div class="modal-title">Lijst afronden</div>
+      <button id="afrond-modal-close" style="background:rgba(0,0,0,.06);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:16px">✕</button>
+    </div>
+    <div class="modal-sub" id="afrond-sub"></div>
+    <div id="afrond-info" style="background:rgba(0,0,0,.04);border-radius:14px;padding:12px;margin-bottom:16px;font-size:12px;color:var(--text2)"></div>
+    <div class="form-group">
+      <label class="form-label">Projectnummer</label>
+      <input class="form-input" id="afrond-projectnummer" placeholder="Bijv. PRJ-2024-001">
+    </div>
+    <button class="btn-primary" id="afrond-confirm" style="background:linear-gradient(135deg,var(--green),#1d8a5a);box-shadow:0 6px 24px rgba(37,160,106,.35)">
+      Bevestig &amp; rond af
+    </button>
+    <button class="cancel-btn" id="afrond-cancel" style="margin-top:8px">Annuleer</button>
   </div>
 </div>
 

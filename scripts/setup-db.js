@@ -49,7 +49,8 @@ db.exec(`
     aangemaakt    TEXT NOT NULL DEFAULT (datetime('now')),
     verstuurd_op  TEXT,
     gesloten_op   TEXT,
-    CHECK(status IN ('actief','wacht_retour','afgerond','geannuleerd'))
+    projectnummer TEXT,
+    CHECK(status IN ('actief','wacht_retour','wacht_verwerking','afgerond','geannuleerd'))
   );
 
   -- ── PICKLIJST REGELS ────────────────────────────────

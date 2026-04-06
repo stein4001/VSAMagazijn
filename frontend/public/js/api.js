@@ -70,6 +70,7 @@ export const verstuurPicklijst = (id)         => req('POST',   `/picklijsten/${i
 export const verwerkRetour    = (id, regels)  => req('POST',   `/picklijsten/${id}/retour`, { regels });
 export const deletePicklijst   = (id)          => req('DELETE', `/picklijsten/${id}`);
 export const annuleerPicklijst = (id)          => req('POST',   `/picklijsten/${id}/annuleer`);
+export const afrondPicklijst   = (id, projectnummer) => req('POST', `/picklijsten/${id}/afronden`, { projectnummer });
 
 // ── ADMIN ─────────────────────────────────────────────────────────────────────
 export const getStats            = () => req('GET', '/picklijsten/admin/stats');
