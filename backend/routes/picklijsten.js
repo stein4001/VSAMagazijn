@@ -121,7 +121,7 @@ router.post('/:id/regels', requireAuth, (req, res) => {
 
     if (bestaand) {
       db.prepare(
-        'UPDATE picklijst_regels SET meegenomen = meegenomen + ?, bijgewerkt = datetime("now") WHERE id = ?'
+        "UPDATE picklijst_regels SET meegenomen = meegenomen + ?, bijgewerkt = datetime('now') WHERE id = ?"
       ).run(meegenomen, bestaand.id);
       return res.status(201).json(getPicklijstMetRegels(req.params.id));
     }
