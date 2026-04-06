@@ -118,24 +118,26 @@ async function startScanner() {
   const btn = document.getElementById('scan-start-btn');
   btn.style.display = 'none';
 
-  scanner = new Scanner('qr-reader', async (code) => {
+  scanner = new Scanner('scan-video', async (code) => {
     await stopScanner();
     await handleScanResult(code);
   });
 
   try {
     await scanner.start();
-    document.getElementById('scan-line').style.display = 'none'; // echte camera actief
-  } catch {
-    // Camera niet beschikbaar → toon manual input
+  } catch (err) {
+    // Camera niet beschikbaar of geweigerd
     btn.style.display = '';
-    showToast('Camera niet beschikbaar, gebruik handmatig invoer', true);
+    scanner = null;
+    const msg = err?.name === 'NotAllowedError'
+      ? 'Camera-toegang geweigerd. Geef toestemming in je browserinstellingen.'
+      : 'Camera niet beschikbaar, gebruik handmatig invoer.';
+    showToast(msg, true);
   }
 }
 
 async function stopScanner() {
   if (scanner) { await scanner.stop(); scanner = null; }
-  document.getElementById('scan-line').style.display = '';
 }
 
 // Handmatig code invoer

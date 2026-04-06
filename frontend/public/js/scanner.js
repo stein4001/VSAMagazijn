@@ -1,63 +1,78 @@
 // frontend/public/js/scanner.js
-// QR-scanner wrapper. Gebruikt de camera als beschikbaar.
+// QR-scanner via getUserMedia + jsQR. Geen bibliotheek-UI.
 
 export class Scanner {
-  constructor(containerId, onResult) {
-    this.containerId = containerId;
+  constructor(videoId, onResult) {
+    this.video   = document.getElementById(videoId);
+    this.canvas  = document.getElementById('scan-canvas');
+    this.ctx     = this.canvas.getContext('2d', { willReadFrequently: true });
     this.onResult = onResult;
-    this.instance = null;
+    this.stream  = null;
+    this.rafId   = null;
     this.running = false;
+    this._lastCode = null;
+    this._cooldown = false;
   }
 
   async start() {
     if (this.running) return;
 
-    // Wacht tot Html5Qrcode geladen is (via CDN script tag in HTML)
-    if (typeof Html5Qrcode === 'undefined') {
-      console.warn('Html5Qrcode niet beschikbaar, scanner uitgeschakeld');
-      return;
+    const constraints = {
+      video: {
+        facingMode: { ideal: 'environment' },
+        width:  { ideal: 1280 },
+        height: { ideal: 720 },
+      },
+      audio: false,
+    };
+
+    this.stream = await navigator.mediaDevices.getUserMedia(constraints);
+    this.video.srcObject = this.stream;
+    this.video.style.display = '';
+    await this.video.play();
+    this.running = true;
+    this._scan();
+  }
+
+  _scan() {
+    if (!this.running) return;
+
+    if (this.video.readyState === this.video.HAVE_ENOUGH_DATA) {
+      const vw = this.video.videoWidth;
+      const vh = this.video.videoHeight;
+
+      if (vw > 0 && vh > 0) {
+        this.canvas.width  = vw;
+        this.canvas.height = vh;
+        this.ctx.drawImage(this.video, 0, 0, vw, vh);
+
+        const imageData = this.ctx.getImageData(0, 0, vw, vh);
+        const code = jsQR(imageData.data, vw, vh, {
+          inversionAttempts: 'dontInvert',
+        });
+
+        if (code && code.data && !this._cooldown) {
+          this._cooldown = true;
+          this.onResult(code.data);
+          return; // stop scanning, caller roept stop() aan
+        }
+      }
     }
 
-    try {
-      this.instance = new Html5Qrcode(this.containerId);
-      const cameras = await Html5Qrcode.getCameras();
-      if (!cameras || cameras.length === 0) throw new Error('Geen camera gevonden');
-
-      // Voorkeur: back-camera
-      const cam = cameras.find(c => /back|achter|environment/i.test(c.label)) || cameras[cameras.length - 1];
-
-      // Bereken qrbox op basis van de container breedte
-      const container = document.getElementById(this.containerId);
-      const w = container ? container.offsetWidth : 280;
-      const box = Math.round(Math.min(w * 0.7, 260));
-
-      await this.instance.start(
-        cam.id,
-        {
-          fps: 12,
-          qrbox: { width: box, height: box },
-          aspectRatio: 4/3,
-          disableFlip: false,
-          rememberLastUsedCamera: false,
-          showTorchButtonIfSupported: false,
-          showZoomSliderIfSupported: false,
-          defaultZoomValueIfSupported: 1,
-        },
-        (decodedText) => { this.onResult(decodedText); },
-        () => {}
-      );
-      this.running = true;
-    } catch (err) {
-      console.warn('Scanner start fout:', err.message);
-      // Geef fout terug zodat UI kan terugvallen op handmatig invoer
-      throw err;
-    }
+    this.rafId = requestAnimationFrame(() => this._scan());
   }
 
   async stop() {
-    if (this.instance && this.running) {
-      await this.instance.stop().catch(() => {});
-      this.running = false;
+    this.running = false;
+    if (this.rafId) { cancelAnimationFrame(this.rafId); this.rafId = null; }
+    if (this.stream) {
+      this.stream.getTracks().forEach(t => t.stop());
+      this.stream = null;
     }
+    if (this.video) {
+      this.video.srcObject = null;
+      this.video.style.display = 'none';
+    }
+    this._cooldown = false;
   }
 }

@@ -105,15 +105,6 @@ body {
 .corner.tl{top:12px;left:12px} .corner.tr{top:12px;right:12px;transform:scaleX(-1)} .corner.bl{bottom:12px;left:12px;transform:scaleY(-1)} .corner.br{bottom:12px;right:12px;transform:scale(-1)}
 .scan-line { position:absolute; left:12px; right:12px; height:2px; background:linear-gradient(90deg,transparent,rgba(255,255,255,.9),transparent); border-radius:1px; animation:scanAnim 2s ease-in-out infinite; opacity:.8; z-index:2; }
 @keyframes scanAnim{0%{top:16px;opacity:.4}50%{top:calc(100% - 16px);opacity:.9}100%{top:16px;opacity:.4}}
-/* html5-qrcode bibliotheek: verberg eigen UI, behoud alleen video */
-#qr-reader { position:absolute; inset:0; width:100% !important; height:100% !important; border:none !important; }
-#qr-reader video { object-fit:cover; width:100% !important; height:100% !important; display:block; }
-#qr-reader img { display:none !important; }
-#qr-reader__dashboard { display:none !important; }
-#qr-reader__scan_region { width:100% !important; height:100% !important; }
-#qr-reader__scan_region img { display:none !important; }
-#qr-reader button { display:none !important; }
-#qr-reader select { display:none !important; }
 .scan-placeholder { display:flex; flex-direction:column; align-items:center; gap:8px; padding:16px; z-index:1; }
 .scan-icon { font-size:32px; opacity:.25; }
 .scan-text { font-size:14px; font-weight:600; color:var(--text2); }

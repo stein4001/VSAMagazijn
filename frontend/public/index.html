@@ -10,8 +10,8 @@
   <link rel="manifest" href="/manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/app.css">
-  <!-- QR scanner library -->
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <!-- jsQR: lichtgewicht QR decoder, geen eigen UI -->
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 </head>
 <body>
 
@@ -95,14 +95,16 @@
           <div class="corner bl"></div><div class="corner br"></div>
           <div class="scan-line" id="scan-line"></div>
 
-          <!-- Camera viewport -->
-          <div id="qr-reader"></div>
+          <!-- Camera video element -->
+          <video id="scan-video" autoplay muted playsinline style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"></video>
+          <!-- Canvas voor QR detectie (verborgen) -->
+          <canvas id="scan-canvas" style="display:none;position:absolute;inset:0;width:100%;height:100%;"></canvas>
 
           <!-- Placeholder -->
           <div class="scan-placeholder" id="scan-placeholder">
             <div class="scan-icon">⬛</div>
             <div class="scan-text">Camera activeren</div>
-            <div class="scan-sub">of kies een artikel hieronder</div>
+            <div class="scan-sub">of typ de code handmatig</div>
           </div>
 
           <!-- Resultaat na scan -->
