@@ -156,12 +156,12 @@ async function handleScanResult(code) {
     showScannedArtikel(artikel);
   } catch {
     // Artikel niet in DB — maak automatisch aan op basis van QR-inhoud
-    // QR formaat: "ACT1990 UTP CAT6 1,5M Blauw" → eerste woord = code, rest = naam
-    const parts = code.trim().split(/\s+/);
-    const qr_code = parts[0];
-    const naam = parts.length > 1 ? parts.slice(1).join(' ') : code;
+    // QR formaat: "ACT1990 UTP CAT6 1,5M Blauw" → volledige string als qr_code, rest na eerste woord als naam
+    const trimmed = code.trim();
+    const spaceIdx = trimmed.indexOf(' ');
+    const naam = spaceIdx > 0 ? trimmed.slice(spaceIdx + 1) : trimmed;
     try {
-      const nieuw = await API.createArtikel({ naam, qr_code, eenheid: 'stuk' });
+      const nieuw = await API.createArtikel({ naam, qr_code: trimmed, eenheid: 'stuk' });
       showToast('Nieuw artikel aangemaakt: ' + naam);
       showScannedArtikel(nieuw);
     } catch (err2) {

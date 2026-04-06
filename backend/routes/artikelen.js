@@ -82,10 +82,19 @@ router.post('/', requireAuth, (req, res) => {
   const id = uuid();
   const qr_code = qrOverride || ('ART-' + Date.now().toString(36).toUpperCase());
 
-  db.prepare(`
-    INSERT INTO artikelen (id, naam, omschrijving, qr_code, eenheid, categorie, min_voorraad)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(id, naam, omschrijving || null, qr_code, eenheid, categorie || null, min_voorraad || 0);
+  try {
+    db.prepare(`
+      INSERT INTO artikelen (id, naam, omschrijving, qr_code, eenheid, categorie, min_voorraad)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(id, naam, omschrijving || null, qr_code, eenheid, categorie || null, min_voorraad || 0);
+  } catch (err) {
+    // UNIQUE conflict op qr_code — geef bestaand artikel terug
+    if (err.code === 'SQLITE_CONSTRAINT_UNIQUE' || err.message?.includes('UNIQUE')) {
+      const bestaand = db.prepare('SELECT * FROM artikelen WHERE qr_code = ?').get(qr_code);
+      if (bestaand) return res.json(bestaand);
+    }
+    throw err;
+  }
 
   res.status(201).json(db.prepare('SELECT * FROM artikelen WHERE id = ?').get(id));
 });
