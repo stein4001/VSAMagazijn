@@ -82,7 +82,8 @@ window.switchNavTab = function switchNavTab(active) {
   showScreen(active);
   document.getElementById('nav-worker-tab').classList.toggle('active', active === 'main');
   document.getElementById('nav-admin-tab').classList.toggle('active', active === 'admin');
-  if (active !== 'main') stopScanner();
+  if (active !== 'main') { stopScanner(); }
+  if (active === 'main')  { resetScanVP(); }
 };
 
 window.doLogout = function() {
@@ -108,27 +109,37 @@ window.workerTab = function(tab) {
   document.querySelectorAll('.seg-btn').forEach((b,i) =>
     b.classList.toggle('active', (i===0 && tab==='scan') || (i===1 && tab==='lists'))
   );
-  if (tab === 'lists') { stopScanner(); loadMyLists(); }
-  if (tab === 'scan')  { /* scanner start wanneer gebruiker klikt */ }
+  if (tab === 'lists') { stopScanner(); resetScanVP(); loadMyLists(); }
+  if (tab === 'scan')  { resetScanVP(); }
 };
 
 // ── SCANNER ──────────────────────────────────────────────────────────────────
-document.getElementById('scan-start-btn')?.addEventListener('click', startScanner);
+// scan-start-btn.onclick wordt dynamisch beheerd via resetScanVP / startScanner
+document.getElementById('scan-start-btn').onclick = startScanner;
 
 async function startScanner() {
   const btn = document.getElementById('scan-start-btn');
-  btn.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = '⏳ Camera starten…';
+
+  if (scanner) { await stopScanner(); }
 
   scanner = new Scanner('scan-video', async (code) => {
     await stopScanner();
+    btn.disabled = false;
+    btn.textContent = '📷 Camera starten';
     await handleScanResult(code);
   });
 
   try {
     await scanner.start();
+    btn.disabled = false;
+    btn.textContent = '⏹ Camera stoppen';
+    btn.onclick = async () => { await stopScanner(); resetScanVP(); };
   } catch (err) {
-    // Camera niet beschikbaar of geweigerd
-    btn.style.display = '';
+    btn.disabled = false;
+    btn.textContent = '📷 Camera starten';
+    btn.onclick = startScanner;
     scanner = null;
     const msg = err?.name === 'NotAllowedError'
       ? 'Camera-toegang geweigerd. Geef toestemming in je browserinstellingen.'
@@ -179,7 +190,9 @@ function showScannedArtikel(artikel) {
   document.getElementById('scanned-result').classList.add('show');
   document.getElementById('scan-placeholder').style.display = 'none';
   document.getElementById('scan-vp').classList.add('scanned');
-  document.getElementById('scan-start-btn').style.display = 'none';
+  const startBtn = document.getElementById('scan-start-btn');
+  startBtn.textContent = '📷 Opnieuw scannen';
+  startBtn.onclick = startScanner;
   // Toon qty-stepper of SN-invoer afhankelijk van eenheid
   document.getElementById('qty-wrap').style.display = isSN ? 'none' : '';
   document.getElementById('sn-wrap').style.display  = isSN ? '' : 'none';
@@ -197,7 +210,11 @@ function resetScanVP() {
   document.getElementById('scanned-result').classList.remove('show');
   document.getElementById('scan-placeholder').style.display = '';
   document.getElementById('scan-vp').classList.remove('scanned');
-  document.getElementById('scan-start-btn').style.display = '';
+  const btn = document.getElementById('scan-start-btn');
+  btn.style.display = '';
+  btn.disabled = false;
+  btn.textContent = '📷 Camera starten';
+  btn.onclick = startScanner;
   document.getElementById('amt-card').style.opacity = '0.4';
   document.getElementById('amt-card').style.pointerEvents = 'none';
   document.getElementById('add-btn').disabled = true;
