@@ -129,6 +129,82 @@ router.delete('/:id', requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
+// GET /api/artikelen/export — CSV download (admin)
+router.get('/export/csv', requireAdmin, (req, res) => {
+  const arts = db.prepare('SELECT * FROM artikelen WHERE actief = 1 ORDER BY naam').all();
+  const header = 'qr_code;naam;omschrijving;eenheid;categorie';
+  const rows = arts.map(a => [
+    csvEsc(a.qr_code), csvEsc(a.naam), csvEsc(a.omschrijving||''),
+    csvEsc(a.eenheid), csvEsc(a.categorie||''),
+  ].join(';'));
+  const csv = [header, ...rows].join('\r\n');
+  res.set('Content-Type', 'text/csv; charset=utf-8');
+  res.set('Content-Disposition', `attachment; filename="artikelen-${dateStr()}.csv"`);
+  res.send('\uFEFF' + csv); // BOM voor Excel
+});
+
+// POST /api/artikelen/import — CSV upload (admin)
+router.post('/import/csv', requireAdmin, express.text({ type: '*/*', limit: '2mb' }), (req, res) => {
+  const lines = req.body.replace(/\r/g, '').split('\n').filter(Boolean);
+  if (lines.length < 2) return res.status(400).json({ error: 'Lege of ongeldige CSV' });
+
+  const header = lines[0].toLowerCase().split(';').map(h => h.trim());
+  const idx = (name) => header.indexOf(name);
+
+  if (idx('qr_code') === -1 || idx('naam') === -1) {
+    return res.status(400).json({ error: 'CSV moet minimaal kolommen qr_code en naam bevatten' });
+  }
+
+  const insert = db.prepare(`
+    INSERT INTO artikelen (id, naam, omschrijving, qr_code, eenheid, categorie)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `);
+  const update = db.prepare(`
+    UPDATE artikelen SET naam=?, omschrijving=?, eenheid=?, categorie=?, actief=1 WHERE qr_code=?
+  `);
+
+  let aangemaakt = 0, bijgewerkt = 0, fouten = 0;
+
+  const importAll = db.transaction(() => {
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(';').map(c => c.trim().replace(/^"|"$/g, ''));
+      const qr_code = cols[idx('qr_code')];
+      const naam    = cols[idx('naam')];
+      if (!qr_code || !naam) { fouten++; continue; }
+
+      const omschrijving = idx('omschrijving') >= 0 ? cols[idx('omschrijving')] || null : null;
+      const eenheid      = idx('eenheid')      >= 0 ? cols[idx('eenheid')]      || 'stuk' : 'stuk';
+      const categorie    = idx('categorie')    >= 0 ? cols[idx('categorie')]     || null : null;
+
+      const bestaand = db.prepare('SELECT id FROM artikelen WHERE qr_code = ?').get(qr_code);
+      if (bestaand) {
+        update.run(naam, omschrijving, eenheid, categorie, qr_code);
+        bijgewerkt++;
+      } else {
+        insert.run(uuid(), naam, omschrijving, qr_code, eenheid, categorie);
+        aangemaakt++;
+      }
+    }
+  });
+
+  try {
+    importAll();
+    res.json({ aangemaakt, bijgewerkt, fouten });
+  } catch (err) {
+    res.status(500).json({ error: 'Import mislukt: ' + err.message });
+  }
+});
+
+function csvEsc(val) {
+  const s = String(val ?? '');
+  return s.includes(';') || s.includes('"') || s.includes('\n')
+    ? '"' + s.replace(/"/g, '""') + '"'
+    : s;
+}
+function dateStr() {
+  return new Date().toISOString().slice(0,10);
+}
+
 // GET /api/artikelen/categorieën/lijst
 router.get('/categorieen/lijst', requireAuth, (req, res) => {
   const cats = db.prepare(

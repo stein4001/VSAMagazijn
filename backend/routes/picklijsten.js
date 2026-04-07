@@ -325,4 +325,51 @@ router.get('/admin/verbruik-per-medewerker', requireAdmin, (req, res) => {
   res.json(rows);
 });
 
+// GET /api/picklijsten/admin/export — CSV export alle picklijsten (admin)
+router.get('/admin/export', requireAdmin, (req, res) => {
+  const { status, van, tot } = req.query;
+
+  let sql = `
+    SELECT p.id, g.naam as medewerker, p.klant, p.projectnummer, p.status,
+           p.aangemaakt, p.verstuurd_op, p.gesloten_op,
+           a.naam as artikel, a.qr_code, r.meegenomen, r.teruggekomen, r.verbruik,
+           r.serienummer, a.eenheid, a.categorie
+    FROM picklijsten p
+    JOIN gebruikers g ON g.id = p.gebruiker_id
+    LEFT JOIN picklijst_regels r ON r.picklijst_id = p.id
+    LEFT JOIN artikelen a ON a.id = r.artikel_id
+    WHERE 1=1
+  `;
+  const params = [];
+  if (status) { sql += ' AND p.status = ?'; params.push(status); }
+  if (van)    { sql += ' AND p.aangemaakt >= ?'; params.push(van); }
+  if (tot)    { sql += ' AND p.aangemaakt <= ?'; params.push(tot + ' 23:59:59'); }
+  sql += ' ORDER BY p.aangemaakt DESC, a.naam';
+
+  const rows = db.prepare(sql).all(...params);
+
+  const header = 'lijst_id;medewerker;klant;projectnummer;status;aangemaakt;verstuurd_op;gesloten_op;artikel;qr_code;eenheid;categorie;meegenomen;teruggekomen;verbruik;serienummer';
+  const lines = rows.map(r => [
+    pc(r.id), pc(r.medewerker), pc(r.klant), pc(r.projectnummer), pc(r.status),
+    pc(r.aangemaakt), pc(r.verstuurd_op), pc(r.gesloten_op),
+    pc(r.artikel), pc(r.qr_code), pc(r.eenheid), pc(r.categorie),
+    r.meegenomen ?? '', r.teruggekomen ?? '', r.verbruik ?? '', pc(r.serienummer),
+  ].join(';'));
+
+  const csv = [header, ...lines].join('\r\n');
+  res.set('Content-Type', 'text/csv; charset=utf-8');
+  res.set('Content-Disposition', `attachment; filename="picklijsten-${dateStr()}.csv"`);
+  res.send('\uFEFF' + csv);
+});
+
+function pc(val) {
+  if (val == null) return '';
+  const s = String(val);
+  return s.includes(';') || s.includes('"') || s.includes('\n')
+    ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function dateStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 module.exports = router;

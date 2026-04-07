@@ -784,6 +784,48 @@ document.getElementById('afrond-cancel')?.addEventListener('click', () =>
 document.getElementById('afrond-modal-close')?.addEventListener('click', () =>
   document.getElementById('afrond-modal').classList.remove('open'));
 
+// ── IMPORT / EXPORT ───────────────────────────────────────────────────────────
+async function downloadCsv(url, filename) {
+  try {
+    const res = await fetch(url, {
+      headers: { 'Authorization': 'Bearer ' + API.auth.token }
+    });
+    if (!res.ok) throw new Error('Export mislukt');
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  } catch (err) { showToast(err.message, true); }
+}
+
+window.exportArtikelen = () => downloadCsv(
+  API.exportArtikelen(),
+  `artikelen-${new Date().toISOString().slice(0,10)}.csv`
+);
+
+window.importArtikelen = async function(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const text = await file.text();
+  input.value = '';
+  try {
+    const result = await API.importArtikelen(text);
+    loadAdminArtikelen();
+    showToast(`✓ Import klaar: ${result.aangemaakt} nieuw, ${result.bijgewerkt} bijgewerkt${result.fouten ? ', ' + result.fouten + ' fout(en)' : ''}`);
+  } catch (err) { showToast('Import mislukt: ' + err.message, true); }
+};
+
+window.exportPicklijsten = function() {
+  const params = {};
+  if (adminFilter) params.status = adminFilter;
+  downloadCsv(
+    API.exportPicklijsten(params),
+    `picklijsten-${new Date().toISOString().slice(0,10)}.csv`
+  );
+};
+
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 function statusMeta(status) {
   return {

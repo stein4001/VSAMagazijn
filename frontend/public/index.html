@@ -239,6 +239,10 @@
           <option value="wacht_verwerking">Wacht op verwerking</option>
           <option value="afgerond">Afgerond</option>
         </select>
+        <button class="add-btn" onclick="exportPicklijsten()"
+          style="height:38px;font-size:13px;flex:0 0 auto;padding:0 16px;background:rgba(37,160,106,.15);color:var(--green);box-shadow:none;border:1px solid rgba(37,160,106,.3)">
+          ↓ Exporteer CSV
+        </button>
       </div>
       <div class="tbl-wrap">
         <table>
@@ -269,6 +273,14 @@
           style="height:38px;font-size:13px;flex:0 0 auto;padding:0 20px">
           + Nieuw artikel
         </button>
+        <button class="add-btn" onclick="exportArtikelen()"
+          style="height:38px;font-size:13px;flex:0 0 auto;padding:0 16px;background:rgba(37,160,106,.15);color:var(--green);box-shadow:none;border:1px solid rgba(37,160,106,.3)">
+          ↓ Exporteer CSV
+        </button>
+        <label class="add-btn" style="height:38px;font-size:13px;flex:0 0 auto;padding:0 16px;background:rgba(58,123,213,.12);color:var(--blue);box-shadow:none;border:1px solid rgba(58,123,213,.25);cursor:pointer;display:flex;align-items:center">
+          ↑ Importeer CSV
+          <input type="file" id="art-import-file" accept=".csv" style="display:none" onchange="importArtikelen(this)">
+        </label>
       </div>
       <div class="tbl-wrap">
         <table>

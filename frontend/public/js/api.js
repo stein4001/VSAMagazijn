@@ -24,13 +24,14 @@ export const auth = {
   isLoggedIn() { return !!_token; },
 };
 
-async function req(method, path, body) {
+async function req(method, path, body, contentType) {
+  const ct = contentType || 'application/json';
   const opts = {
     method,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': ct },
   };
   if (_token) opts.headers['Authorization'] = 'Bearer ' + _token;
-  if (body)   opts.body = JSON.stringify(body);
+  if (body !== undefined) opts.body = ct === 'application/json' ? JSON.stringify(body) : body;
 
   const res = await fetch(API_BASE + path, opts);
   const data = await res.json().catch(() => ({}));
@@ -50,6 +51,12 @@ export const login = (email, wachtwoord) => req('POST', '/auth/login', { email, 
 // ── ARTIKELEN ─────────────────────────────────────────────────────────────────
 export const getArtikelen    = (q)    => req('GET', `/artikelen${q ? '?q=' + encodeURIComponent(q) : ''}`);
 export const getCategorieen  = ()     => req('GET', '/artikelen/categorieen/lijst');
+export const exportArtikelen = ()     => '/api/artikelen/export/csv';
+export const importArtikelen = (csv)  => req('POST', '/artikelen/import/csv', csv, 'text/plain');
+export const exportPicklijsten = (params = {}) => {
+  const q = new URLSearchParams(params).toString();
+  return '/api/picklijsten/admin/export' + (q ? '?' + q : '');
+};
 export const getArtikelQR  = (code) => req('GET', `/artikelen/qr/${encodeURIComponent(code)}`);
 export const getArtikel    = (id)   => req('GET', `/artikelen/${id}`);
 export const createArtikel = (body) => req('POST', '/artikelen', body);
