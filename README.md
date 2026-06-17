@@ -59,7 +59,15 @@ Pas minimaal aan:
 JWT_SECRET=maak-dit-een-lange-willekeurige-string-van-32-tekens
 PORT=3000
 NODE_ENV=production
+CORS_ORIGIN=https://jouwdomein.nl
 ```
+
+Genereer een veilige `JWT_SECRET`:
+```bash
+openssl rand -base64 32
+```
+
+> ⚠️ De server weigert te starten als `JWT_SECRET` niet is ingesteld.
 
 ### 1.5 Database aanmaken en vullen
 
@@ -277,6 +285,21 @@ cp /opt/magazijn/backend/data/magazijn.db /opt/backups/magazijn-$(date +%Y%m%d).
 # sudo crontab -e
 # 0 2 * * * cp /opt/magazijn/backend/data/magazijn.db /opt/backups/magazijn-$(date +\%Y\%m\%d).db
 ```
+
+---
+
+## Beveiliging
+
+| Maatregel | Implementatie |
+|-----------|---------------|
+| Wachtwoorden | bcryptjs (cost 10) — nooit plaintext opgeslagen |
+| JWT tokens | Verlopen na 12u, secret verplicht via `JWT_SECRET` |
+| SQL injection | Alle queries via prepared statements |
+| Brute-force | Max 20 loginpogingen per IP per 15 minuten |
+| Security headers | Helmet (XSS, clickjacking, MIME-sniffing) |
+| CORS | Beperkt tot `CORS_ORIGIN` uit `.env` |
+
+**Na deployment: verander de wachtwoorden van de seed-accounts** via de admin UI of maak nieuwe gebruikers aan en verwijder de demo-accounts.
 
 ---
 

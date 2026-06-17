@@ -3,7 +3,9 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
-const SECRET = process.env.JWT_SECRET || 'magazijn-secret-change-in-production';
+const SECRET = process.env.JWT_SECRET;
+if (!SECRET) throw new Error('JWT_SECRET is niet ingesteld in .env — start de server niet zonder dit.');
+
 const EXPIRES = '12h';
 
 function signToken(payload) {

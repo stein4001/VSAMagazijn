@@ -2,20 +2,35 @@
 
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ── MIDDLEWARE ────────────────────────────────────────────────────────────────
-app.use(cors());
+app.use(helmet());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || false,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minuten
+  max: 20,                   // max 20 pogingen per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Te veel inlogpogingen, probeer het over 15 minuten opnieuw.' },
+});
 
 // Statische frontend bestanden
 app.use(express.static(path.join(__dirname, '../frontend/public')));
 
 // ── API ROUTES ────────────────────────────────────────────────────────────────
+app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth',        require('./routes/auth'));
 app.use('/api/artikelen',   require('./routes/artikelen'));
 app.use('/api/picklijsten', require('./routes/picklijsten'));
