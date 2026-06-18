@@ -11,7 +11,18 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ── MIDDLEWARE ────────────────────────────────────────────────────────────────
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc:  ["'self'"],
+      scriptSrc:   ["'self'", "https://cdn.jsdelivr.net"],
+      styleSrc:    ["'self'", "https://fonts.googleapis.com", "'unsafe-inline'"],
+      fontSrc:     ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
+      imgSrc:      ["'self'", "data:"],
+      connectSrc:  ["'self'"],
+    },
+  },
+}));
 app.use(cors({
   origin: process.env.CORS_ORIGIN || false,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
