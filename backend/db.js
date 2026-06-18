@@ -15,6 +15,9 @@ db.pragma('foreign_keys = ON');
 // Auto-migraties
 try { db.prepare('ALTER TABLE picklijst_regels ADD COLUMN serienummer TEXT').run(); } catch {}
 try { db.prepare('ALTER TABLE picklijsten ADD COLUMN klant TEXT').run(); } catch {}
+try { db.prepare("ALTER TABLE gebruikers ADD COLUMN microsoft_id TEXT").run(); } catch {}
+try { db.prepare("ALTER TABLE gebruikers ADD COLUMN auth_methode TEXT NOT NULL DEFAULT 'beide'").run(); } catch {}
+try { db.prepare("ALTER TABLE picklijsten ADD COLUMN herinnering_gestuurd TEXT").run(); } catch {}
 
 // Migratie: projectnummer + wacht_verwerking status (vereist tabel-recreatie vanwege CHECK constraint)
 const pickCols = db.prepare("PRAGMA table_info(picklijsten)").all().map(c => c.name);

@@ -9,14 +9,14 @@ const { requireAdmin, hashPassword } = require('../auth');
 // GET /api/gebruikers
 router.get('/', requireAdmin, (req, res) => {
   const users = db.prepare(
-    'SELECT id, naam, email, rol, actief, aangemaakt FROM gebruikers ORDER BY naam'
+    'SELECT id, naam, email, rol, actief, auth_methode, aangemaakt FROM gebruikers ORDER BY naam'
   ).all();
   res.json(users);
 });
 
 // POST /api/gebruikers
 router.post('/', requireAdmin, (req, res) => {
-  const { naam, email, wachtwoord, rol } = req.body;
+  const { naam, email, wachtwoord, rol, auth_methode } = req.body;
   if (!naam || !email || !wachtwoord) {
     return res.status(400).json({ error: 'Naam, email en wachtwoord zijn verplicht' });
   }
@@ -25,37 +25,40 @@ router.post('/', requireAdmin, (req, res) => {
   if (bestaand) return res.status(409).json({ error: 'Email al in gebruik' });
 
   const id = uuid();
+  const methode = ['local','microsoft','beide'].includes(auth_methode) ? auth_methode : 'beide';
   db.prepare(`
-    INSERT INTO gebruikers (id, naam, email, wachtwoord, rol)
-    VALUES (?, ?, ?, ?, ?)
-  `).run(id, naam, email.toLowerCase().trim(), hashPassword(wachtwoord), rol || 'medewerker');
+    INSERT INTO gebruikers (id, naam, email, wachtwoord, rol, auth_methode)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(id, naam, email.toLowerCase().trim(), hashPassword(wachtwoord), rol || 'medewerker', methode);
 
   res.status(201).json(
-    db.prepare('SELECT id, naam, email, rol, actief, aangemaakt FROM gebruikers WHERE id = ?').get(id)
+    db.prepare('SELECT id, naam, email, rol, actief, auth_methode, aangemaakt FROM gebruikers WHERE id = ?').get(id)
   );
 });
 
 // PUT /api/gebruikers/:id
 router.put('/:id', requireAdmin, (req, res) => {
-  const { naam, email, rol, actief, wachtwoord } = req.body;
+  const { naam, email, rol, actief, wachtwoord, auth_methode } = req.body;
   const user = db.prepare('SELECT * FROM gebruikers WHERE id = ?').get(req.params.id);
   if (!user) return res.status(404).json({ error: 'Gebruiker niet gevonden' });
 
-  const nieuwWw = wachtwoord ? hashPassword(wachtwoord) : user.wachtwoord;
+  const nieuwWw  = wachtwoord ? hashPassword(wachtwoord) : user.wachtwoord;
+  const methode  = ['local','microsoft','beide'].includes(auth_methode) ? auth_methode : user.auth_methode;
 
   db.prepare(`
-    UPDATE gebruikers SET naam=?, email=?, rol=?, actief=?, wachtwoord=? WHERE id=?
+    UPDATE gebruikers SET naam=?, email=?, rol=?, actief=?, wachtwoord=?, auth_methode=? WHERE id=?
   `).run(
     naam ?? user.naam,
     email ?? user.email,
     rol ?? user.rol,
     actief !== undefined ? (actief ? 1 : 0) : user.actief,
     nieuwWw,
+    methode,
     req.params.id
   );
 
   res.json(
-    db.prepare('SELECT id, naam, email, rol, actief, aangemaakt FROM gebruikers WHERE id = ?').get(req.params.id)
+    db.prepare('SELECT id, naam, email, rol, actief, auth_methode, aangemaakt FROM gebruikers WHERE id = ?').get(req.params.id)
   );
 });
 

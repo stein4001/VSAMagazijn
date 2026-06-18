@@ -43,6 +43,16 @@
         <div class="form-error" id="login-error"></div>
         <button class="btn-primary" id="login-btn" type="submit">Inloggen</button>
       </form>
+
+      <div style="display:flex;align-items:center;gap:10px;margin:18px 0 4px">
+        <div style="flex:1;height:1px;background:rgba(0,0,0,.08)"></div>
+        <span style="font-size:12px;color:var(--text3);font-weight:600">of</span>
+        <div style="flex:1;height:1px;background:rgba(0,0,0,.08)"></div>
+      </div>
+      <a href="/api/auth/microsoft" id="ms-login-btn" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:50px;border-radius:25px;border:none;background:rgba(255,255,255,0.7);color:var(--text);font-family:'Figtree',sans-serif;font-size:15px;font-weight:600;cursor:pointer;box-shadow:var(--shadow-sm);text-decoration:none;margin-top:6px;transition:all .2s">
+        <svg width="20" height="20" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="9" height="9" fill="#F25022"/><rect x="11" y="1" width="9" height="9" fill="#7FBA00"/><rect x="1" y="11" width="9" height="9" fill="#00A4EF"/><rect x="11" y="11" width="9" height="9" fill="#FFB900"/></svg>
+        Inloggen met Microsoft
+      </a>
     </div>
   </div>
 </div>
@@ -413,6 +423,14 @@
             <option value="0">Inactief</option>
           </select>
         </div>
+      </div>
+      <div class="form-group" style="margin-top:4px">
+        <label class="form-label">Inlogmethode</label>
+        <select class="form-input" id="geb-auth-methode">
+          <option value="beide">Beide (Microsoft + wachtwoord)</option>
+          <option value="microsoft">Alleen Microsoft SSO</option>
+          <option value="local">Alleen wachtwoord (lokaal)</option>
+        </select>
       </div>
       <button class="btn-primary" type="submit" style="margin-top:14px">Opslaan</button>
     </form>

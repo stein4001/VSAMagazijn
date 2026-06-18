@@ -5,6 +5,7 @@ const router = express.Router();
 const { v4: uuid } = require('uuid');
 const db = require('../db');
 const { requireAuth, requireAdmin } = require('../auth');
+const { stuurNieuweLijstNotif, stuurAfgerondNotif } = require('../services/notificaties');
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -90,7 +91,9 @@ router.post('/', requireAuth, (req, res) => {
     VALUES (?, ?, 'actief', ?, ?)
   `).run(id, req.user.id, klant || null, notities || null);
 
-  res.status(201).json(getPicklijstMetRegels(id));
+  const resultaat = getPicklijstMetRegels(id);
+  stuurNieuweLijstNotif(resultaat).catch(() => {});
+  res.status(201).json(resultaat);
 });
 
 // POST /api/picklijsten/:id/regels — voeg artikel toe aan lijst
@@ -241,9 +244,11 @@ router.post('/:id/afronden', requireAdmin, (req, res) => {
   }
   const { projectnummer } = req.body;
   db.prepare(`
-    UPDATE picklijsten SET status = 'afgerond', projectnummer = ? WHERE id = ?
+    UPDATE picklijsten SET status = 'afgerond', projectnummer = ?, gesloten_op = datetime('now') WHERE id = ?
   `).run(projectnummer || null, req.params.id);
-  res.json(getPicklijstMetRegels(req.params.id));
+  const afgerond = getPicklijstMetRegels(req.params.id);
+  stuurAfgerondNotif(afgerond).catch(() => {});
+  res.json(afgerond);
 });
 
 // POST /api/picklijsten/:id/annuleer — medewerker annuleert eigen actieve lijst

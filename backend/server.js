@@ -49,6 +49,9 @@ app.get('*', (req, res) => {
   }
 });
 
+// ── CRON ──────────────────────────────────────────────────────────────────────
+require('./cron');
+
 // ── START ─────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`\n🚀 Magazijn server draait op http://localhost:${PORT}`);

@@ -13,6 +13,7 @@ let adminFilter = '';
 // ── INIT ─────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   registerSW();
+  handleMicrosoftCallback();
   if (API.auth.isLoggedIn()) {
     showApp();
   } else {
@@ -20,6 +21,36 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   window.addEventListener('auth:logout', () => showScreen('login'));
 });
+
+function handleMicrosoftCallback() {
+  const params = new URLSearchParams(window.location.search);
+  const msToken = params.get('ms_token');
+  const msUser  = params.get('ms_user');
+  const msError = params.get('ms_error');
+
+  if (msToken && msUser) {
+    try {
+      API.auth.set(msToken, JSON.parse(decodeURIComponent(msUser)));
+    } catch {}
+    history.replaceState({}, '', '/');
+    return;
+  }
+  if (msError) {
+    const berichten = {
+      geen_account:    'Geen account gevonden voor dit Microsoft account. Vraag een admin om je toe te voegen.',
+      alleen_lokaal:   'Dit account kan niet inloggen via Microsoft.',
+      ongeldige_sessie:'Ongeldige sessie, probeer opnieuw.',
+      token_mislukt:   'Microsoft login mislukt, probeer opnieuw.',
+      server_fout:     'Er is een serverfout opgetreden bij Microsoft login.',
+    };
+    const errEl = document.getElementById('login-error');
+    if (errEl) {
+      errEl.textContent = berichten[msError] || 'Microsoft login mislukt: ' + msError;
+      errEl.classList.add('show');
+    }
+    history.replaceState({}, '', '/');
+  }
+}
 
 function registerSW() {
   if ('serviceWorker' in navigator) {
@@ -710,6 +741,7 @@ window.openGebruikerModal = async function(id) {
   document.getElementById('geb-rol').value = u.rol || 'medewerker';
   document.getElementById('geb-actief').value = u.actief !== undefined ? String(u.actief) : '1';
   document.getElementById('geb-actief-wrap').style.display = isNew ? 'none' : '';
+  document.getElementById('geb-auth-methode').value = u.auth_methode || 'beide';
   document.getElementById('geb-modal').classList.add('open');
 };
 
@@ -729,6 +761,7 @@ document.getElementById('geb-form')?.addEventListener('submit', async (e) => {
     naam: document.getElementById('geb-naam').value,
     email: document.getElementById('geb-email').value,
     rol: document.getElementById('geb-rol').value,
+    auth_methode: document.getElementById('geb-auth-methode').value,
   };
   const ww = document.getElementById('geb-wachtwoord').value;
   if (ww) body.wachtwoord = ww;
