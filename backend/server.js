@@ -12,16 +12,7 @@ const PORT = process.env.PORT || 3000;
 
 // ── MIDDLEWARE ────────────────────────────────────────────────────────────────
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc:  ["'self'"],
-      scriptSrc:   ["'self'", "https://cdn.jsdelivr.net"],
-      styleSrc:    ["'self'", "https://fonts.googleapis.com", "'unsafe-inline'"],
-      fontSrc:     ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
-      imgSrc:      ["'self'", "data:"],
-      connectSrc:  ["'self'"],
-    },
-  },
+  contentSecurityPolicy: false, // app gebruikt inline onclick-handlers; refactor vereist voor volledige CSP
 }));
 app.use(cors({
   origin: process.env.CORS_ORIGIN || false,
