@@ -188,7 +188,86 @@ Open in browser: `https://jouwdomein.nl`
 
 ---
 
-## 7. PWA installeren op telefoon
+## 7. Microsoft SSO instellen (optioneel)
+
+Microsoft login werkt naast het bestaande wachtwoord-systeem. Volg deze stappen.
+
+### 7.1 Azure App Registration aanmaken
+
+1. Ga naar [portal.azure.com](https://portal.azure.com) → **Azure Active Directory** → **App registrations** → **New registration**
+2. Vul in:
+   - **Name**: Magazijn App
+   - **Supported account types**: Accounts in this organizational directory only
+   - **Redirect URI**: Web → `https://jouwdomein.nl/api/auth/microsoft/callback`
+3. Klik **Register**
+
+### 7.2 Credentials en IDs kopiëren
+
+Op de **Overview** pagina van de App Registration:
+- Kopieer **Application (client) ID** → `AZURE_CLIENT_ID`
+- Kopieer **Directory (tenant) ID** → `AZURE_TENANT_ID`
+
+> ⚠️ Gebruik altijd het **kopieer-icoontje** — de GUID moet exact 36 tekens zijn (`xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`).
+
+Ga naar **Certificates & secrets** → **Client secrets** → **New client secret**:
+- Kies een vervaldatum → **Add**
+- Kopieer de **Value** meteen → `AZURE_CLIENT_SECRET` (alleen zichtbaar direct na aanmaken)
+
+### 7.3 API permissions instellen
+
+Ga naar **API permissions** → **Add a permission** → **Microsoft Graph**:
+
+| Type | Permission | Gebruik |
+|------|-----------|---------|
+| Delegated | `User.Read` | Inloggen via SSO |
+| Application | `Mail.Send` | E-mail versturen vanuit mailbox |
+
+Klik daarna op **Grant admin consent for [organisatie]** (vereist Global Admin rechten).
+
+### 7.4 Groep toewijzen in Enterprise Application
+
+Standaard kan iedereen in de tenant inloggen. Beperk dit tot een specifieke groep:
+
+1. Ga naar **Azure Active Directory** → **Enterprise applications** → zoek op "Magazijn App"
+2. Ga naar **Properties** → zet **Assignment required** op **Yes** → **Save**
+3. Ga naar **Users and groups** → **Add user/group** → voeg de gewenste groep toe met rol **User**
+
+Alleen leden van deze groep kunnen nu inloggen via Microsoft.
+
+### 7.5 `.env` aanvullen
+
+```bash
+nano /opt/magazijn/.env
+```
+
+Voeg toe:
+```
+AZURE_TENANT_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+AZURE_CLIENT_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+AZURE_CLIENT_SECRET=...
+AZURE_REDIRECT_URI=https://jouwdomein.nl/api/auth/microsoft/callback
+
+MAIL_FROM=magazijn@jouwdomein.nl
+NOTIF_ADMIN_EMAIL=admin@jouwdomein.nl
+NOTIF_LIJST_MAX_DAGEN=3
+```
+
+```bash
+pm2 restart magazijn
+```
+
+### 7.6 Gebruikers koppelen
+
+Gebruikers moeten **eerst aangemaakt worden in de admin UI** met hetzelfde e-mailadres als hun M365-account. Bij de eerste Microsoft-login wordt het account automatisch gekoppeld.
+
+Per gebruiker is in de admin UI instelbaar welke inlogmethode is toegestaan:
+- **Beide** — Microsoft SSO én wachtwoord (standaard)
+- **Alleen Microsoft** — wachtwoord-login geblokkeerd
+- **Alleen lokaal** — Microsoft-login geblokkeerd (gebruik dit voor het backdoor admin-account)
+
+---
+
+## 8. PWA installeren op telefoon
 
 1. Open de app in Chrome/Safari op de telefoon
 2. Tik op **"Toevoegen aan beginscherm"** (iOS: deelknop → "Zet op beginscherm")
