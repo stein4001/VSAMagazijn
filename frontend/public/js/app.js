@@ -53,10 +53,41 @@ function handleMicrosoftCallback() {
 }
 
 function registerSW() {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.register('/sw.js').then(reg => {
+    reg.addEventListener('updatefound', () => {
+      const nieuw = reg.installing;
+      nieuw.addEventListener('statechange', () => {
+        if (nieuw.state === 'installed' && navigator.serviceWorker.controller) {
+          toonUpdateToast();
+        }
+      });
+    });
+  }).catch(() => {});
+}
+
+function toonUpdateToast() {
+  let bar = document.getElementById('update-bar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'update-bar';
+    bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:9999;background:rgba(58,123,213,.96);backdrop-filter:blur(16px);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:14px 20px;font-family:Figtree,sans-serif;font-size:14px;font-weight:600;box-shadow:0 -4px 24px rgba(0,0,0,.15)';
+    bar.innerHTML = '<span>🔄 Er is een update beschikbaar</span><button onclick="activeerUpdate()" style="background:rgba(255,255,255,.25);border:none;border-radius:20px;color:#fff;font-family:Figtree,sans-serif;font-size:13px;font-weight:700;padding:7px 18px;cursor:pointer">Nu vernieuwen</button>';
+    document.body.appendChild(bar);
   }
 }
+
+window.activeerUpdate = async function() {
+  const reg = await navigator.serviceWorker.getRegistration();
+  if (reg?.waiting) reg.waiting.postMessage('skipWaiting');
+  navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
+};
+
+window.clearAppCache = async function() {
+  const keys = await caches.keys();
+  await Promise.all(keys.map(k => caches.delete(k)));
+  location.reload();
+};
 
 // ── SCHERMEN ─────────────────────────────────────────────────────────────────
 function showScreen(name) {
@@ -72,6 +103,7 @@ function showApp() {
   document.getElementById('nav-naam').textContent = u?.naam?.split(' ')[0] || 'Gebruiker';
   document.getElementById('nav-avatar').textContent = (u?.naam || 'G').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
   document.getElementById('nav-admin-tab').style.display = API.auth.isAdmin ? '' : 'none';
+  document.getElementById('refresh-btn').style.display  = API.auth.isAdmin ? '' : 'none';
 
   if (API.auth.isAdmin) {
     showScreen('admin');
