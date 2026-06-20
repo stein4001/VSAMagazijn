@@ -792,24 +792,41 @@ document.getElementById('art-modal-close')?.addEventListener('click', () =>
   document.getElementById('art-modal').classList.remove('open'));
 
 // ── ADMIN GEBRUIKERS ──────────────────────────────────────────────────────────
+let toonInactieveGebruikers = false;
+
 async function loadGebruikers() {
   const body = document.getElementById('geb-tbody');
-  body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text3)">Laden…</td></tr>';
+  body.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text3)">Laden…</td></tr>';
   try {
-    const users = await API.getGebruikers();
+    const alleUsers = await API.getGebruikers();
+    const users = toonInactieveGebruikers ? alleUsers : alleUsers.filter(u => u.actief);
+
+    const toggleBtn = document.getElementById('geb-toon-inactief-btn');
+    if (toggleBtn) {
+      toggleBtn.textContent = toonInactieveGebruikers ? 'Verberg inactieven' : 'Toon inactieven';
+    }
+
+    if (users.length === 0) {
+      body.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text3)">Geen gebruikers gevonden.</td></tr>';
+      return;
+    }
     body.innerHTML = users.map(u => `
       <tr>
         <td class="td-bold" data-label="Naam">${esc(u.naam)}</td>
         <td data-label="E-mail" style="color:var(--text2);font-size:12px">${esc(u.email)}</td>
         <td data-label="Rol"><span class="badge ${u.rol==='admin'?'b-purple':'b-blue'}" style="${u.rol==='admin'?'background:rgba(139,92,246,.12);color:#8b5cf6;':''}">${u.rol}</span></td>
-        <td data-label="Status"><span class="badge ${u.actief?'b-green':'b-orange'}">${u.actief?'Actief':'Inactief'}</span></td>
-        <td style="display:flex;gap:8px;align-items:center">
-          <button class="retour-action" style="background:none;border:none;padding:0" onclick="openGebruikerModal('${u.id}')">Wijzig ›</button>
-          <button class="pick-del" title="Verwijderen" onclick="verwijderGebruiker('${u.id}','${esc(u.naam)}')">✕</button>
+        <td data-label="Status" style="display:flex;gap:8px;align-items:center">
+          <span class="badge ${u.actief?'b-green':'b-orange'}">${u.actief?'Actief':'Inactief'}</span>
+          <button class="retour-action" style="background:none;border:none;padding:0;margin-left:auto" onclick="openGebruikerModal('${u.id}')">Wijzig ›</button>
         </td>
       </tr>`).join('');
   } catch (err) { showToast(err.message, true); }
 }
+
+window.toggleInactieveGebruikers = function() {
+  toonInactieveGebruikers = !toonInactieveGebruikers;
+  loadGebruikers();
+};
 
 window.openGebruikerModal = async function(id) {
   const isNew = id === 'new';
@@ -829,15 +846,19 @@ window.openGebruikerModal = async function(id) {
   document.getElementById('geb-actief').value = u.actief !== undefined ? String(u.actief) : '1';
   document.getElementById('geb-actief-wrap').style.display = isNew ? 'none' : '';
   document.getElementById('geb-auth-methode').value = u.auth_methode || 'beide';
+  document.getElementById('geb-delete-wrap').style.display = isNew ? 'none' : '';
   document.getElementById('geb-modal').classList.add('open');
 };
 
-window.verwijderGebruiker = async function(id, naam) {
-  if (!confirm(`Gebruiker "${naam}" deactiveren?`)) return;
+window.verwijderGebruikerVanuitModal = async function() {
+  const id = document.getElementById('geb-id').value;
+  const naam = document.getElementById('geb-naam').value;
+  if (!confirm(`Gebruiker "${naam}" definitief verwijderen? Dit kan niet ongedaan worden gemaakt.`)) return;
   try {
     await API.deleteGebruiker(id);
+    document.getElementById('geb-modal').classList.remove('open');
     loadGebruikers();
-    showToast('✓ Gebruiker gedeactiveerd');
+    showToast('✓ Gebruiker verwijderd');
   } catch (err) { showToast(err.message, true); }
 };
 

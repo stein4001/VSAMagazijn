@@ -326,11 +326,15 @@
           style="height:38px;font-size:13px;flex:0 0 auto;padding:0 20px">
           + Nieuwe gebruiker
         </button>
+        <button id="geb-toon-inactief-btn" class="fsel" onclick="toggleInactieveGebruikers()"
+          style="height:38px;font-size:13px">
+          Toon inactieven
+        </button>
       </div>
       <div class="tbl-wrap">
         <table>
           <thead><tr>
-            <th>Naam</th><th>E-mail</th><th>Rol</th><th>Status</th><th></th>
+            <th>Naam</th><th>E-mail</th><th>Rol</th><th>Status</th>
           </tr></thead>
           <tbody id="geb-tbody"></tbody>
         </table>
@@ -450,6 +454,9 @@
         </select>
       </div>
       <button class="btn-primary" type="submit" style="margin-top:14px">Opslaan</button>
+      <div id="geb-delete-wrap" style="display:none;margin-top:10px">
+        <button type="button" onclick="verwijderGebruikerVanuitModal()" style="width:100%;height:44px;border:none;border-radius:22px;background:var(--red-l);color:var(--red);font-family:'Figtree',sans-serif;font-size:14px;font-weight:700;cursor:pointer">Gebruiker verwijderen</button>
+      </div>
     </form>
   </div>
 </div>

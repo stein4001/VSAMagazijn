@@ -62,9 +62,20 @@ router.put('/:id', requireAdmin, (req, res) => {
   );
 });
 
-// DELETE /api/gebruikers/:id — soft delete
+// DELETE /api/gebruikers/:id — hard delete (geblokkeerd als gebruiker picklijsten heeft)
 router.delete('/:id', requireAdmin, (req, res) => {
-  db.prepare('UPDATE gebruikers SET actief = 0 WHERE id = ?').run(req.params.id);
+  if (req.params.id === req.user.id) {
+    return res.status(400).json({ error: 'Je kunt je eigen account niet verwijderen.' });
+  }
+
+  const { n } = db.prepare('SELECT COUNT(*) as n FROM picklijsten WHERE gebruiker_id = ?').get(req.params.id);
+  if (n > 0) {
+    return res.status(409).json({
+      error: `Gebruiker heeft ${n} picklijst(en) en kan niet worden verwijderd. Deactiveer de gebruiker via "Wijzig".`
+    });
+  }
+
+  db.prepare('DELETE FROM gebruikers WHERE id = ?').run(req.params.id);
   res.json({ ok: true });
 });
 
