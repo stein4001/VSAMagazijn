@@ -1,11 +1,11 @@
 {
-  "name": "Magazijn",
-  "short_name": "Magazijn",
-  "description": "Magazijn materiaal beheer",
+  "name": "VSA Magazijn",
+  "short_name": "VSA Magazijn",
+  "description": "VSA materiaal beheer systeem",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#dde5f0",
-  "theme_color": "#dde5f0",
+  "background_color": "#d8e2f0",
+  "theme_color": "#1c3a6e",
   "orientation": "portrait-primary",
   "icons": [
     { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
