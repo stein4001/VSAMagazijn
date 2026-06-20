@@ -70,13 +70,29 @@
       <button class="nav-tab active" id="nav-worker-tab" onclick="switchNavTab('main');initWorker()">Medewerker</button>
       <button class="nav-tab" id="nav-admin-tab" onclick="switchNavTab('admin');initAdmin()">Admin</button>
     </div>
-    <div style="display:flex;align-items:center;gap:10px">
-      <div class="nav-user" style="cursor:default;pointer-events:none">
+    <div class="profile-wrap">
+      <button class="profile-btn" id="profile-btn" onclick="toggleProfileMenu()">
         <div class="avatar" id="nav-avatar">JV</div>
-        <span id="nav-naam">Gebruiker</span>
+        <span class="profile-btn-name" id="nav-naam">Gebruiker</span>
+        <svg class="profile-btn-chevron" width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1l5 5 5-5" stroke="var(--text2)" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <div class="profile-menu glass-strong" id="profile-menu">
+        <div class="profile-menu-header">
+          <div class="profile-menu-name" id="menu-naam">Gebruiker</div>
+          <div class="profile-menu-role" id="menu-rol"></div>
+        </div>
+        <div class="menu-div"></div>
+        <button class="profile-item" onclick="toggleProfileMenu();clearAppCache()">
+          <div class="profile-item-icon" style="background:rgba(58,123,213,.1)">🔄</div>App vernieuwen
+        </button>
+        <button class="profile-item" onclick="toggleProfileMenu();openInstellingen()">
+          <div class="profile-item-icon" style="background:rgba(0,0,0,.06)">⚙️</div>Instellingen
+        </button>
+        <div class="menu-div"></div>
+        <button class="profile-item danger" onclick="doLogout()">
+          <div class="profile-item-icon" style="background:rgba(232,74,74,.1)">↪️</div>Uitloggen
+        </button>
       </div>
-      <button onclick="clearAppCache()" id="refresh-btn" title="Cache wissen en app vernieuwen" style="display:none;background:rgba(58,123,213,.12);border:none;border-radius:50px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;color:var(--blue)">🔄 Vernieuwen</button>
-      <button onclick="doLogout()" id="logout-btn" style="background:rgba(0,0,0,.07);border:none;border-radius:50px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text2)">Uitloggen</button>
     </div>
   </nav>
 </div>
@@ -462,6 +478,27 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
+<!-- Instellingen modal -->
+<div class="modal-bg" id="inst-modal">
+  <div class="modal" style="border-radius:var(--r-xl)">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div class="modal-title">Instellingen</div>
+      <button id="inst-modal-close" style="background:rgba(0,0,0,.06);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:16px">✕</button>
+    </div>
+
+    <div class="section-label">App</div>
+    <div class="glass" style="border-radius:var(--r-lg);padding:16px 18px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:14px">
+        <div>
+          <div style="font-weight:700;font-size:14px">App vernieuwen</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:3px">Wist gecachte bestanden en herlaadt de app met de nieuwste versie.</div>
+        </div>
+        <button onclick="clearAppCache()" style="flex-shrink:0;height:36px;padding:0 16px;border-radius:18px;border:none;background:var(--blue-l);color:var(--blue);font-family:'Figtree',sans-serif;font-size:13px;font-weight:700;cursor:pointer">🔄 Vernieuwen</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script type="module" src="/js/app.js"></script>
 </body>

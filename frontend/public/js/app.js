@@ -98,12 +98,13 @@ function showScreen(name) {
 }
 
 function showApp() {
-  // Gebruikersnaam in nav
   const u = API.auth.user;
-  document.getElementById('nav-naam').textContent = u?.naam?.split(' ')[0] || 'Gebruiker';
-  document.getElementById('nav-avatar').textContent = (u?.naam || 'G').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+  const initialen = (u?.naam || 'G').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('nav-naam').textContent  = u?.naam?.split(' ')[0] || 'Gebruiker';
+  document.getElementById('nav-avatar').textContent = initialen;
+  document.getElementById('menu-naam').textContent  = u?.naam || 'Gebruiker';
+  document.getElementById('menu-rol').textContent   = u?.rol || '';
   document.getElementById('nav-admin-tab').style.display = API.auth.isAdmin ? '' : 'none';
-  document.getElementById('refresh-btn').style.display  = API.auth.isAdmin ? '' : 'none';
 
   if (API.auth.isAdmin) {
     showScreen('admin');
@@ -152,8 +153,37 @@ window.switchNavTab = function switchNavTab(active) {
 window.doLogout = function() {
   API.auth.clear();
   stopScanner();
+  closeProfileMenu();
   showScreen('login');
 };
+
+window.toggleProfileMenu = function() {
+  const btn  = document.getElementById('profile-btn');
+  const menu = document.getElementById('profile-menu');
+  const open = menu.classList.toggle('open');
+  btn.classList.toggle('open', open);
+};
+
+function closeProfileMenu() {
+  document.getElementById('profile-menu')?.classList.remove('open');
+  document.getElementById('profile-btn')?.classList.remove('open');
+}
+
+document.addEventListener('click', e => {
+  if (!document.getElementById('profile-btn')?.contains(e.target) &&
+      !document.getElementById('profile-menu')?.contains(e.target)) {
+    closeProfileMenu();
+  }
+});
+
+window.openInstellingen = function() {
+  document.getElementById('inst-modal').classList.add('open');
+};
+document.getElementById('inst-modal-close')?.addEventListener('click', () =>
+  document.getElementById('inst-modal').classList.remove('open'));
+document.getElementById('inst-modal')?.addEventListener('click', e => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
+});
 
 window.initWorker = initWorker;
 window.initAdmin  = initAdmin;
@@ -570,12 +600,12 @@ async function loadAdminLists() {
     body.innerHTML = lijsten.map(l => {
       const s = statusMeta(l.status);
       return `<tr onclick="toggleExpand('${l.id}')">
-        <td class="td-id">${esc(l.id)}</td>
-        <td class="td-bold">${esc(l.gebruiker_naam)}</td>
-        <td style="font-size:12px">${l.klant ? `<span style="font-weight:700">${esc(l.klant)}</span>` : '<span style="color:var(--text3)">—</span>'}</td>
-        <td style="font-size:12px;color:var(--text2)">${formatDatum(l.aangemaakt)}</td>
-        <td style="font-size:12px;color:var(--text2)">${l.aantal_regels} art.</td>
-        <td><span class="badge ${s.cls}"><span class="badge-dot"></span>${s.txt}</span></td>
+        <td class="td-id" data-label="">${esc(l.id)}</td>
+        <td class="td-bold" data-label="Medewerker">${esc(l.gebruiker_naam)}</td>
+        <td data-label="Klant">${l.klant ? `<span style="font-weight:700">${esc(l.klant)}</span>` : '<span style="color:var(--text3)">—</span>'}</td>
+        <td data-label="Datum" style="font-size:12px;color:var(--text2)">${formatDatum(l.aangemaakt)}</td>
+        <td data-label="Artikelen" style="font-size:12px;color:var(--text2)">${l.aantal_regels} art.</td>
+        <td data-label="Status"><span class="badge ${s.cls}"><span class="badge-dot"></span>${s.txt}</span></td>
         <td style="display:flex;gap:8px;align-items:center">
           ${l.status==='wacht_retour'?`<span class="retour-action" onclick="event.stopPropagation();openRetour('${l.id}')">Verwerk ›</span>`:''}
           ${l.status==='wacht_verwerking'?`<span class="retour-action" style="color:var(--purple)" onclick="event.stopPropagation();openAfronden('${l.id}')">Rond af ›</span>`:''}
@@ -672,14 +702,14 @@ async function loadAdminArtikelen() {
     const arts = await API.getArtikelen();
     body.innerHTML = arts.map((a,i) => `
       <tr onclick="openArtikelModal('${a.id}')">
-        <td><div class="art-cell">
+        <td data-label="Naam"><div class="art-cell">
           <div class="art-thumb" style="background:${artBg[i%artBg.length]}">${artIcons[a.categorie] || '📦'}</div>
           <span class="td-bold">${esc(a.naam)}</span>
         </div></td>
-        <td class="td-id">${esc(a.qr_code)}</td>
-        <td style="color:var(--text2)">${esc(a.eenheid)}</td>
-        <td style="color:var(--text2)">${esc(a.categorie||'—')}</td>
-        <td><a href="/api/artikelen/${a.id}/qr-image" target="_blank" onclick="event.stopPropagation()" style="font-size:12px;color:var(--blue);font-weight:600;text-decoration:none">QR ↗</a></td>
+        <td data-label="QR" class="td-id">${esc(a.qr_code)}</td>
+        <td data-label="Eenheid" style="color:var(--text2)">${esc(a.eenheid)}</td>
+        <td data-label="Categorie" style="color:var(--text2)">${esc(a.categorie||'—')}</td>
+        <td data-label=""><a href="/api/artikelen/${a.id}/qr-image" target="_blank" onclick="event.stopPropagation()" style="font-size:12px;color:var(--blue);font-weight:600;text-decoration:none">QR ↗</a></td>
         <td><button class="pick-del" title="Verwijderen" onclick="event.stopPropagation();verwijderArtikel('${a.id}','${esc(a.naam)}')">✕</button></td>
       </tr>`).join('');
   } catch (err) { showToast(err.message, true); }
@@ -744,10 +774,10 @@ async function loadGebruikers() {
     const users = await API.getGebruikers();
     body.innerHTML = users.map(u => `
       <tr>
-        <td class="td-bold">${esc(u.naam)}</td>
-        <td style="color:var(--text2);font-size:12px">${esc(u.email)}</td>
-        <td><span class="badge ${u.rol==='admin'?'b-purple':'b-blue'}" style="${u.rol==='admin'?'background:rgba(139,92,246,.12);color:#8b5cf6;':''}">${u.rol}</span></td>
-        <td><span class="badge ${u.actief?'b-green':'b-orange'}">${u.actief?'Actief':'Inactief'}</span></td>
+        <td class="td-bold" data-label="Naam">${esc(u.naam)}</td>
+        <td data-label="E-mail" style="color:var(--text2);font-size:12px">${esc(u.email)}</td>
+        <td data-label="Rol"><span class="badge ${u.rol==='admin'?'b-purple':'b-blue'}" style="${u.rol==='admin'?'background:rgba(139,92,246,.12);color:#8b5cf6;':''}">${u.rol}</span></td>
+        <td data-label="Status"><span class="badge ${u.actief?'b-green':'b-orange'}">${u.actief?'Actief':'Inactief'}</span></td>
         <td style="display:flex;gap:8px;align-items:center">
           <button class="retour-action" style="background:none;border:none;padding:0" onclick="openGebruikerModal('${u.id}')">Wijzig ›</button>
           <button class="pick-del" title="Verwijderen" onclick="verwijderGebruiker('${u.id}','${esc(u.naam)}')">✕</button>
