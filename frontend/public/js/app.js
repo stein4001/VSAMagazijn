@@ -10,8 +10,32 @@ let scanner = null;
 let retourListId = null;
 let adminFilter = '';
 
+// ── THEMA ─────────────────────────────────────────────────────────────────────
+function applyTheme() {
+  const saved = localStorage.getItem('mz_theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const isDark = saved === 'dark' || (saved === null && prefersDark);
+  document.body.classList.toggle('dark', isDark);
+  document.getElementById('dark-toggle')?.classList.toggle('on', isDark);
+  document.querySelector('meta[name="theme-color"]')
+    ?.setAttribute('content', isDark ? '#0c1020' : '#dde5f0');
+}
+
+window.toggleDarkMode = function() {
+  const isDark = document.body.classList.toggle('dark');
+  localStorage.setItem('mz_theme', isDark ? 'dark' : 'light');
+  document.getElementById('dark-toggle')?.classList.toggle('on', isDark);
+  document.querySelector('meta[name="theme-color"]')
+    ?.setAttribute('content', isDark ? '#0c1020' : '#dde5f0');
+};
+
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  if (!localStorage.getItem('mz_theme')) applyTheme();
+});
+
 // ── INIT ─────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
+  applyTheme();
   registerSW();
   handleMicrosoftCallback();
   if (API.auth.isLoggedIn()) {
@@ -178,6 +202,7 @@ document.addEventListener('click', e => {
 
 window.openInstellingen = function() {
   document.getElementById('inst-modal').classList.add('open');
+  document.getElementById('dark-toggle')?.classList.toggle('on', document.body.classList.contains('dark'));
 };
 document.getElementById('inst-modal-close')?.addEventListener('click', () =>
   document.getElementById('inst-modal').classList.remove('open'));
