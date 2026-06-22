@@ -723,7 +723,7 @@ let _adminArtMap = {};
 
 async function loadAdminArtikelen() {
   const body = document.getElementById('art-tbody');
-  body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3)">Laden…</td></tr>';
+  body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text3)">Laden…</td></tr>';
   try {
     const arts = await API.getArtikelen();
     _adminArtMap = {};
@@ -738,41 +738,52 @@ async function loadAdminArtikelen() {
         <td data-label="Eenheid" style="color:var(--text2)">${esc(a.eenheid)}</td>
         <td data-label="Categorie" style="color:var(--text2)">${esc(a.categorie||'—')}</td>
         <td data-label=""><button class="btn-dymo" title="DYMO label exporteren" onclick="event.stopPropagation();dymoExport('${a.id}')">DYMO</button></td>
-        <td><button class="pick-del" title="Verwijderen" onclick="event.stopPropagation();verwijderArtikel('${a.id}','${esc(a.naam)}')">✕</button></td>
       </tr>`).join('');
   } catch (err) { showToast(err.message, true); }
+}
+
+function _dymoCsvRows(artikelen) {
+  const header = ['QR_Code', 'Regel1', 'Regel2', 'Regel3', 'Regel4'];
+  const rows = artikelen.map(a => {
+    const parts = a.naam.split(' - ');
+    return [a.qr_code, parts[0]||'', parts[1]||'', parts[2]||'', parts.slice(3).join(' - ')||''];
+  });
+  return [header, ...rows]
+    .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';'))
+    .join('\r\n');
+}
+
+function _downloadCsvBlob(csv, filename) {
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const el = document.createElement('a');
+  el.href = url;
+  el.download = filename;
+  document.body.appendChild(el);
+  el.click();
+  document.body.removeChild(el);
+  URL.revokeObjectURL(url);
 }
 
 window.dymoExport = function(id) {
   const a = _adminArtMap[id];
   if (!a) return;
-  const parts = a.naam.split(' - ');
-  const header = ['QR_Code', 'Regel1', 'Regel2', 'Regel3', 'Regel4'];
-  const dataRow = [
-    a.qr_code,
-    parts[0] || '',
-    parts[1] || '',
-    parts[2] || '',
-    parts.slice(3).join(' - ') || ''
-  ];
-  const csv = [header, dataRow]
-    .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';'))
-    .join('\r\n');
-  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const el = document.createElement('a');
-  el.href = url;
-  el.download = `${a.qr_code}_dymo.csv`;
-  document.body.appendChild(el);
-  el.click();
-  document.body.removeChild(el);
-  URL.revokeObjectURL(url);
+  _downloadCsvBlob(_dymoCsvRows([a]), `${a.qr_code}_dymo.csv`);
 };
 
-window.verwijderArtikel = async function(id, naam) {
-  if (!confirm(`Artikel "${naam}" verwijderen?`)) return;
+window.dymoExportAll = function() {
+  const arts = Object.values(_adminArtMap);
+  if (!arts.length) return;
+  _downloadCsvBlob(_dymoCsvRows(arts), `alle-artikelen-dymo.csv`);
+};
+
+window.verwijderArtikelVanuitModal = async function() {
+  const id = document.getElementById('art-id').value;
+  const naam = document.getElementById('art-naam').value;
+  if (!confirm(`Artikel "${naam}" verwijderen? Dit kan niet ongedaan worden gemaakt.`)) return;
   try {
     await API.deleteArtikel(id);
+    document.getElementById('art-modal').classList.remove('open');
     loadAdminArtikelen();
     showToast('✓ Artikel verwijderd');
   } catch (err) { showToast(err.message, true); }
@@ -783,17 +794,18 @@ window.openArtikelModal = async function(id) {
     id === 'new' ? Promise.resolve({}) : API.getArtikel(id),
     API.getCategorieen().catch(() => []),
   ]);
-  // Datalist vullen met bestaande categorieën
+  const isNew = id === 'new';
   document.getElementById('cat-datalist').innerHTML =
     cats.map(c => `<option value="${esc(c)}">`).join('');
-  document.getElementById('art-modal-title').textContent = id === 'new' ? 'Nieuw artikel' : art.naam;
-  document.getElementById('art-id').value = id === 'new' ? '' : id;
+  document.getElementById('art-modal-title').textContent = isNew ? 'Nieuw artikel' : art.naam;
+  document.getElementById('art-id').value = isNew ? '' : id;
   document.getElementById('art-qr').value = art.qr_code || '';
   document.getElementById('art-qr').disabled = !!art.id;
   document.getElementById('art-naam').value = art.naam || '';
   document.getElementById('art-omschrijving').value = art.omschrijving || '';
   document.getElementById('art-eenheid').value = art.eenheid || 'stuk';
   document.getElementById('art-categorie').value = art.categorie || '';
+  document.getElementById('art-delete-wrap').style.display = isNew ? 'none' : '';
   document.getElementById('art-modal').classList.add('open');
 };
 
