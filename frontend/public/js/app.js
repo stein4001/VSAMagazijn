@@ -756,7 +756,7 @@ window.dymoExport = function(id) {
     parts.slice(3).join(' - ') || ''
   ];
   const csv = [header, dataRow]
-    .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+    .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';'))
     .join('\r\n');
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
