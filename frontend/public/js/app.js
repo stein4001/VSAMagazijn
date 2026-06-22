@@ -719,12 +719,15 @@ async function loadVerbruik() {
 // ── ADMIN ARTIKELEN ───────────────────────────────────────────────────────────
 const artIcons = {'Gereedschap':'🔩','Elektra':'🔌','Verbruiksartikelen':'📄','PBM':'⛑️','Bevestigingsmateriaal':'🔧'};
 const artBg = ['#f5e8d5','#d5e8f5','#f5f5d5','#d5f5e8','#f5d5e8','#e8d5f5','#d5f0f5'];
+let _adminArtMap = {};
 
 async function loadAdminArtikelen() {
   const body = document.getElementById('art-tbody');
   body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3)">Laden…</td></tr>';
   try {
     const arts = await API.getArtikelen();
+    _adminArtMap = {};
+    arts.forEach(a => { _adminArtMap[a.id] = a; });
     body.innerHTML = arts.map((a,i) => `
       <tr onclick="openArtikelModal('${a.id}')">
         <td data-label="Naam"><div class="art-cell">
@@ -734,11 +737,37 @@ async function loadAdminArtikelen() {
         <td data-label="QR" class="td-id">${esc(a.qr_code)}</td>
         <td data-label="Eenheid" style="color:var(--text2)">${esc(a.eenheid)}</td>
         <td data-label="Categorie" style="color:var(--text2)">${esc(a.categorie||'—')}</td>
-        <td data-label=""><a href="/api/artikelen/${a.id}/qr-image" target="_blank" onclick="event.stopPropagation()" style="font-size:12px;color:var(--blue);font-weight:600;text-decoration:none">QR ↗</a></td>
+        <td data-label=""><button class="btn-dymo" title="DYMO label exporteren" onclick="event.stopPropagation();dymoExport('${a.id}')">DYMO</button></td>
         <td><button class="pick-del" title="Verwijderen" onclick="event.stopPropagation();verwijderArtikel('${a.id}','${esc(a.naam)}')">✕</button></td>
       </tr>`).join('');
   } catch (err) { showToast(err.message, true); }
 }
+
+window.dymoExport = function(id) {
+  const a = _adminArtMap[id];
+  if (!a) return;
+  const parts = a.naam.split(' - ');
+  const header = ['QR_Code', 'Regel1', 'Regel2', 'Regel3', 'Regel4'];
+  const dataRow = [
+    a.qr_code,
+    parts[0] || '',
+    parts[1] || '',
+    parts[2] || '',
+    parts.slice(3).join(' - ') || ''
+  ];
+  const csv = [header, dataRow]
+    .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+    .join('\r\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const el = document.createElement('a');
+  el.href = url;
+  el.download = `${a.qr_code}_dymo.csv`;
+  document.body.appendChild(el);
+  el.click();
+  document.body.removeChild(el);
+  URL.revokeObjectURL(url);
+};
 
 window.verwijderArtikel = async function(id, naam) {
   if (!confirm(`Artikel "${naam}" verwijderen?`)) return;
