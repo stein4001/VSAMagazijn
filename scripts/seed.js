@@ -33,13 +33,13 @@ for (const g of gebruikers) {
 const artikelen = [
   { naam: 'Boormachine 18V',   omschrijving: 'Accu boormachine 18V',     eenheid: 'stuk', categorie: 'Gereedschap',    qr: 'ART-001' },
   { naam: 'Verlengkabel 10m',  omschrijving: 'Verlengsnoer 3-voudig 10m', eenheid: 'stuk', categorie: 'Elektra',         qr: 'ART-002' },
-  { naam: 'Schuurpapier P80',  omschrijving: 'Schuurpapier korrel P80',   eenheid: 'vel',  categorie: 'Verbruiksartikelen', qr: 'ART-003' },
+  { naam: 'Schuurpapier P80',  omschrijving: 'Schuurpapier korrel P80',   eenheid: 'stuk', categorie: 'Verbruiksartikelen', qr: 'ART-003' },
   { naam: 'Veiligheidshelm',   omschrijving: 'EN 397 veiligheidshelm',    eenheid: 'stuk', categorie: 'PBM',             qr: 'ART-004' },
-  { naam: 'Tape 50mm',         omschrijving: 'Ducttape 50mm grijs',       eenheid: 'rol',  categorie: 'Verbruiksartikelen', qr: 'ART-005' },
-  { naam: 'Schroeven M6x20',   omschrijving: 'Inox schroeven M6x20',      eenheid: 'zak',  categorie: 'Bevestigingsmateriaal', qr: 'ART-006' },
+  { naam: 'Tape 50mm',         omschrijving: 'Ducttape 50mm grijs',       eenheid: 'stuk', categorie: 'Verbruiksartikelen', qr: 'ART-005' },
+  { naam: 'Schroeven M6x20',   omschrijving: 'Inox schroeven M6x20',      eenheid: 'stuk', categorie: 'Bevestigingsmateriaal', qr: 'ART-006' },
   { naam: 'Slijpschijf 125mm', omschrijving: 'Metaal slijpschijf 125mm',  eenheid: 'stuk', categorie: 'Verbruiksartikelen', qr: 'ART-007' },
-  { naam: 'Veiligheidsschoenen', omschrijving: 'S3 veiligheidsschoenen',  eenheid: 'paar', categorie: 'PBM',             qr: 'ART-008' },
-  { naam: 'Werkhandschoenen',  omschrijving: 'Snijbestendige handschoenen', eenheid: 'paar', categorie: 'PBM',           qr: 'ART-009' },
+  { naam: 'Veiligheidsschoenen', omschrijving: 'S3 veiligheidsschoenen',  eenheid: 'stuk', categorie: 'PBM',             qr: 'ART-008' },
+  { naam: 'Werkhandschoenen',  omschrijving: 'Snijbestendige handschoenen', eenheid: 'stuk', categorie: 'PBM',           qr: 'ART-009' },
   { naam: 'Meetlint 5m',       omschrijving: 'Meetlint staal 5 meter',    eenheid: 'stuk', categorie: 'Gereedschap',    qr: 'ART-010' },
 ];
 
