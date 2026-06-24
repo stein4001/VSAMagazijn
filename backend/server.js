@@ -29,6 +29,12 @@ const loginLimiter = rateLimit({
   message: { error: 'Te veel inlogpogingen, probeer het over 15 minuten opnieuw.' },
 });
 
+// sw.js nooit cachen zodat de browser altijd de nieuwste versie detecteert
+app.get('/sw.js', (req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
+
 // Statische frontend bestanden
 app.use(express.static(path.join(__dirname, '../frontend/public')));
 

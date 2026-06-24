@@ -1,5 +1,5 @@
 // frontend/public/sw.js
-const CACHE = 'magazijn-v2';
+const CACHE = 'magazijn-v3';
 const ASSETS = ['/', '/index.html', '/css/app.css', '/js/app.js', '/js/api.js', '/js/scanner.js'];
 
 self.addEventListener('install', e => {
