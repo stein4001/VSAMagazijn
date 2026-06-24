@@ -8,6 +8,6 @@
   "theme_color": "#1c3a6e",
   "orientation": "portrait-primary",
   "icons": [
-    { "src": "/vsa-v.png", "sizes": "any", "type": "image/png", "purpose": "any maskable" }
+    { "src": "/apple-touch-icon.png", "sizes": "any", "type": "image/png", "purpose": "any maskable" }
   ]
 }
