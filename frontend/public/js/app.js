@@ -216,9 +216,18 @@ window.initAdmin  = initAdmin;
 // ══════════════════════════════════════════════════════════════════════════════
 // MEDEWERKER
 // ══════════════════════════════════════════════════════════════════════════════
-function initWorker() {
+async function initWorker() {
   document.getElementById('klant-input').value = '';
   workerTab('scan');
+  try {
+    const lijsten = await API.getPicklijsten({ status: 'actief', limit: 1 });
+    if (lijsten.length) {
+      activePicklijstId = lijsten[0].id;
+      if (lijsten[0].klant) document.getElementById('klant-input').value = lijsten[0].klant;
+      await renderPicklist();
+      showToast('↩ Actieve lijst hervat');
+    }
+  } catch {}
 }
 
 window.workerTab = function(tab) {
@@ -471,8 +480,9 @@ function listCardHtml(l) {
   };
   const s = sm[l.status] || sm.actief;
   const ico = { actief:'📋', waiting:'⏳', done:'✅' };
-  const click = l.status === 'wacht_retour' ? `openRetour('${l.id}')` : '';
-  return `<div class="list-card glass" onclick="${click}" style="${l.status==='wacht_retour'?'':'cursor:default'}">
+  const click = l.status === 'wacht_retour' ? `openRetour('${l.id}')` :
+                l.status === 'actief'       ? `resumePicklijst('${l.id}')` : '';
+  return `<div class="list-card glass" onclick="${click}" style="${click?'':'cursor:default'}">
     <div class="list-icon ${s.ico}">${ico[s.ico]}</div>
     <div class="list-info">
       <div class="list-id">${esc(l.id)}</div>
@@ -492,6 +502,16 @@ window.verwijderEigenLijst = async function(id) {
     loadMyLists();
     showToast('✓ Lijst geannuleerd');
   } catch (err) { showToast(err.message, true); }
+};
+
+window.resumePicklijst = async function(id) {
+  activePicklijstId = id;
+  workerTab('scan');
+  try {
+    const lijst = await API.getPicklijst(id);
+    if (lijst.klant) document.getElementById('klant-input').value = lijst.klant;
+  } catch {}
+  await renderPicklist();
 };
 
 // ── RETOUR ────────────────────────────────────────────────────────────────────
