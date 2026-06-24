@@ -1,5 +1,5 @@
 // frontend/public/sw.js
-const CACHE = 'magazijn-v3';
+const CACHE = 'magazijn-v4';
 const ASSETS = ['/', '/index.html', '/css/app.css', '/js/app.js', '/js/api.js', '/js/scanner.js'];
 
 self.addEventListener('install', e => {
@@ -8,16 +8,23 @@ self.addEventListener('install', e => {
 });
 
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys =>
-    Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-  ));
-  self.clients.claim();
+  e.waitUntil(
+    // Check vóór claim of er al open vensters zijn (= dit is een update, geen eerste installatie)
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then(bestaand => {
+        const isUpdate = bestaand.length > 0;
+        return caches.keys()
+          .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+          .then(() => self.clients.claim())
+          .then(() => isUpdate ? self.clients.matchAll({ type: 'window' }) : [])
+          .then(vensters => vensters.forEach(v => v.navigate(v.url)));
+      })
+  );
 });
 
 self.addEventListener('fetch', e => {
-  if (e.request.url.includes('/api/')) return; // API nooit cachen
+  if (e.request.url.includes('/api/')) return;
 
-  // Network-first: altijd vers van server, cache alleen als offline
   e.respondWith(
     fetch(e.request)
       .then(response => {
@@ -27,9 +34,4 @@ self.addEventListener('fetch', e => {
       })
       .catch(() => caches.match(e.request))
   );
-});
-
-// Luister naar 'skipWaiting' bericht van de app
-self.addEventListener('message', e => {
-  if (e.data === 'skipWaiting') self.skipWaiting();
 });
