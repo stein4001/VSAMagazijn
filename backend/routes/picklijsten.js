@@ -9,6 +9,14 @@ const { stuurNieuweLijstNotif, stuurAfgerondNotif } = require('../services/notif
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
+function upsertKlant(naam) {
+  if (!naam?.trim()) return;
+  const bestaand = db.prepare('SELECT id FROM klanten WHERE naam = ?').get(naam.trim());
+  if (!bestaand) {
+    db.prepare('INSERT INTO klanten (id, naam) VALUES (?, ?)').run(uuid(), naam.trim());
+  }
+}
+
 function getPicklijstMetRegels(id) {
   const lijst = db.prepare(`
     SELECT p.*, g.naam as gebruiker_naam, g.email as gebruiker_email
@@ -86,6 +94,7 @@ router.post('/', requireAuth, (req, res) => {
   const { notities, klant } = req.body;
   const id = uuid();
 
+  if (klant) upsertKlant(klant);
   db.prepare(`
     INSERT INTO picklijsten (id, gebruiker_id, status, klant, notities)
     VALUES (?, ?, 'actief', ?, ?)
@@ -165,6 +174,7 @@ router.patch('/:id', requireAuth, (req, res) => {
     return res.status(400).json({ error: 'Lijst is niet meer bewerkbaar' });
   }
   const { klant, projectnummer } = req.body;
+  if (klant) upsertKlant(klant);
   db.prepare("UPDATE picklijsten SET klant = ?, projectnummer = ? WHERE id = ?")
     .run(klant ?? lijst.klant, projectnummer !== undefined ? projectnummer : lijst.projectnummer, req.params.id);
   res.json(getPicklijstMetRegels(req.params.id));

@@ -347,6 +347,8 @@ document.getElementById('qty-plus')?.addEventListener('click', () => {
 });
 
 // ── KLANT ────────────────────────────────────────────────────────────────────
+document.getElementById('klant-input')?.addEventListener('focus', () => vulKlantenDatalist());
+
 document.getElementById('klant-input')?.addEventListener('blur', async () => {
   if (!activePicklijstId) return;
   const klant = document.getElementById('klant-input').value.trim();
@@ -590,7 +592,7 @@ function initAdmin() {
 }
 
 window.adminTab = function(tab) {
-  ['lists','verbruik','artikelen','gebruikers'].forEach(t => {
+  ['lists','verbruik','artikelen','klanten','gebruikers'].forEach(t => {
     const el = document.getElementById('atab-' + t);
     if (el) el.style.display = t === tab ? '' : 'none';
   });
@@ -600,6 +602,7 @@ window.adminTab = function(tab) {
   if (tab === 'lists')      loadAdminLists();
   if (tab === 'verbruik')   loadVerbruik();
   if (tab === 'artikelen')  loadAdminArtikelen();
+  if (tab === 'klanten')    loadKlanten();
   if (tab === 'gebruikers') loadGebruikers();
 };
 
@@ -835,6 +838,84 @@ document.getElementById('art-form')?.addEventListener('submit', async (e) => {
 
 document.getElementById('art-modal-close')?.addEventListener('click', () =>
   document.getElementById('art-modal').classList.remove('open'));
+
+// ── ADMIN KLANTEN ─────────────────────────────────────────────────────────────
+
+async function loadKlanten() {
+  const body = document.getElementById('klant-tbody');
+  body.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text3)">Laden…</td></tr>';
+  try {
+    const klanten = await API.getKlanten();
+    if (!klanten.length) {
+      body.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text3)">Geen klanten gevonden.</td></tr>';
+      return;
+    }
+    body.innerHTML = klanten.map(k => `
+      <tr>
+        <td class="td-bold" data-label="Naam">${esc(k.naam)}</td>
+        <td data-label="Notities" style="color:var(--text2);font-size:12px">${k.notities ? esc(k.notities) : '<span style="color:var(--text3)">—</span>'}</td>
+        <td data-label="Aangemaakt" style="color:var(--text2);font-size:12px">${formatDatum(k.aangemaakt)}</td>
+        <td style="display:flex;gap:8px;align-items:center">
+          <button class="retour-action" style="background:none;border:none;padding:0;margin-left:auto" onclick="openKlantModal('${k.id}')">Wijzig ›</button>
+        </td>
+      </tr>`).join('');
+  } catch (err) { showToast(err.message, true); }
+}
+
+window.openKlantModal = async function(id) {
+  const isNew = id === 'new';
+  let k = {};
+  if (!isNew) {
+    const klanten = await API.getKlanten();
+    k = klanten.find(x => x.id === id) || {};
+  }
+  document.getElementById('klant-modal-title').textContent = isNew ? 'Nieuwe klant' : 'Klant wijzigen';
+  document.getElementById('klant-id').value = isNew ? '' : id;
+  document.getElementById('klant-naam').value = k.naam || '';
+  document.getElementById('klant-notities').value = k.notities || '';
+  document.getElementById('klant-delete-wrap').style.display = isNew ? 'none' : '';
+  document.getElementById('klant-modal').classList.add('open');
+};
+
+window.verwijderKlantVanuitModal = async function() {
+  const id = document.getElementById('klant-id').value;
+  const naam = document.getElementById('klant-naam').value;
+  if (!confirm(`Klant "${naam}" verwijderen?`)) return;
+  try {
+    await API.deleteKlant(id);
+    document.getElementById('klant-modal').classList.remove('open');
+    loadKlanten();
+    showToast('✓ Klant verwijderd');
+  } catch (err) { showToast(err.message, true); }
+};
+
+document.getElementById('klant-form')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id = document.getElementById('klant-id').value;
+  const body = {
+    naam: document.getElementById('klant-naam').value.trim(),
+    notities: document.getElementById('klant-notities').value.trim() || null,
+  };
+  try {
+    if (id) await API.updateKlant(id, body);
+    else    await API.createKlant(body);
+    document.getElementById('klant-modal').classList.remove('open');
+    loadKlanten();
+    vulKlantenDatalist();
+    showToast('✓ Klant opgeslagen');
+  } catch (err) { showToast(err.message, true); }
+});
+
+document.getElementById('klant-modal-close')?.addEventListener('click', () =>
+  document.getElementById('klant-modal').classList.remove('open'));
+
+async function vulKlantenDatalist() {
+  try {
+    const klanten = await API.getKlanten();
+    const dl = document.getElementById('klant-datalist');
+    if (dl) dl.innerHTML = klanten.map(k => `<option value="${esc(k.naam)}">`).join('');
+  } catch {}
+}
 
 // ── ADMIN GEBRUIKERS ──────────────────────────────────────────────────────────
 let toonInactieveGebruikers = false;

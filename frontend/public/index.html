@@ -203,7 +203,8 @@
           <span class="pill-count" id="pick-count">0 artikelen</span>
         </div>
         <div style="margin-bottom:12px">
-          <input class="form-input" id="klant-input" placeholder="Klant (optioneel)" style="height:38px;font-size:13px">
+          <input class="form-input" id="klant-input" placeholder="Klant (optioneel)" list="klant-datalist" autocomplete="off" style="height:38px;font-size:13px">
+          <datalist id="klant-datalist"></datalist>
         </div>
         <div id="pick-items">
           <div class="list-empty">Scan een artikel om te beginnen</div>
@@ -261,6 +262,7 @@
       <button class="aseg active" data-tab="lists"      onclick="adminTab('lists')">Picklijsten</button>
       <button class="aseg"        data-tab="verbruik"   onclick="adminTab('verbruik')">Verbruik</button>
       <button class="aseg"        data-tab="artikelen"  onclick="adminTab('artikelen')">Artikelen</button>
+      <button class="aseg"        data-tab="klanten"    onclick="adminTab('klanten')">Klanten</button>
       <button class="aseg"        data-tab="gebruikers" onclick="adminTab('gebruikers')">Gebruikers</button>
     </div>
 
@@ -327,6 +329,24 @@
             <th>Artikel</th><th>QR-code</th><th>Eenheid</th><th>Categorie</th><th>Label</th>
           </tr></thead>
           <tbody id="art-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- KLANTEN -->
+    <div id="atab-klanten" style="display:none">
+      <div class="filter-row">
+        <button class="add-btn" onclick="openKlantModal('new')"
+          style="height:38px;font-size:13px;flex:0 0 auto;padding:0 20px">
+          + Nieuwe klant
+        </button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Naam</th><th>Notities</th><th>Aangemaakt</th><th></th>
+          </tr></thead>
+          <tbody id="klant-tbody"></tbody>
         </table>
       </div>
     </div>
@@ -470,6 +490,32 @@
       <button class="btn-primary" type="submit" style="margin-top:14px">Opslaan</button>
       <div id="geb-delete-wrap" style="display:none;margin-top:10px">
         <button type="button" onclick="verwijderGebruikerVanuitModal()" style="width:100%;height:44px;border:none;border-radius:22px;background:var(--red-l);color:var(--red);font-family:'Figtree',sans-serif;font-size:14px;font-weight:700;cursor:pointer">Gebruiker verwijderen</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Klant modal -->
+<div class="modal-bg" id="klant-modal">
+  <div class="modal" style="border-radius:var(--r-xl)">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div class="modal-title" id="klant-modal-title">Klant</div>
+      <button id="klant-modal-close" style="background:rgba(0,0,0,.06);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:16px">✕</button>
+    </div>
+    <form id="klant-form">
+      <input type="hidden" id="klant-id">
+      <div class="form-group">
+        <label class="form-label">Naam</label>
+        <input class="form-input" id="klant-naam" required placeholder="Bijv. Hotel Amsterdam">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notities</label>
+        <input class="form-input" id="klant-notities" placeholder="Optionele notitie">
+      </div>
+      <button class="btn-primary" type="submit" style="margin-top:14px">Opslaan</button>
+      <div id="klant-delete-wrap" style="display:none;margin-top:10px">
+        <button type="button" onclick="verwijderKlantVanuitModal()" style="width:100%;height:44px;border:none;border-radius:22px;background:var(--red-l);color:var(--red);font-family:'Figtree',sans-serif;font-size:14px;font-weight:700;cursor:pointer">Klant verwijderen</button>
       </div>
     </form>
   </div>

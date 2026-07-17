@@ -47,4 +47,22 @@ if (!pickCols.includes('projectnummer')) {
   db.pragma('foreign_keys = ON');
 }
 
+// Klanten tabel (met seed vanuit bestaande picklijsten)
+const klantCols = db.prepare("PRAGMA table_info(klanten)").all();
+if (klantCols.length === 0) {
+  db.exec(`
+    CREATE TABLE klanten (
+      id         TEXT PRIMARY KEY,
+      naam       TEXT NOT NULL UNIQUE,
+      notities   TEXT,
+      aangemaakt TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    INSERT OR IGNORE INTO klanten (id, naam)
+      SELECT lower(hex(randomblob(16))), klant
+      FROM picklijsten
+      WHERE klant IS NOT NULL AND klant != ''
+      GROUP BY klant;
+  `);
+}
+
 module.exports = db;

@@ -90,3 +90,9 @@ export const getGebruikers       = () => req('GET', '/gebruikers');
 export const createGebruiker     = (body) => req('POST', '/gebruikers', body);
 export const updateGebruiker     = (id, body) => req('PUT', `/gebruikers/${id}`, body);
 export const deleteGebruiker     = (id)   => req('DELETE', `/gebruikers/${id}`);
+
+// ── KLANTEN ───────────────────────────────────────────────────────────────────
+export const getKlanten    = ()           => req('GET',    '/klanten');
+export const createKlant   = (body)       => req('POST',   '/klanten', body);
+export const updateKlant   = (id, body)   => req('PUT',    `/klanten/${id}`, body);
+export const deleteKlant   = (id)         => req('DELETE', `/klanten/${id}`);

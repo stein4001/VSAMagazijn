@@ -44,6 +44,7 @@ app.use('/api/auth',        require('./routes/auth'));
 app.use('/api/artikelen',   require('./routes/artikelen'));
 app.use('/api/picklijsten', require('./routes/picklijsten'));
 app.use('/api/gebruikers',  require('./routes/gebruikers'));
+app.use('/api/klanten',     require('./routes/klanten'));
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
