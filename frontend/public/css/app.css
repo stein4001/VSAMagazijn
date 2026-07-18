@@ -333,11 +333,11 @@ tbody td { padding:13px 16px; font-size:13px; }
 /* ── DARK MODE ── */
 body.dark {
   --text:         #eaeaf5;
-  --text2:        #8888b8;
-  --text3:        #5656a0;
-  --glass:        rgba(255,255,255,0.07);
-  --glass-strong: rgba(255,255,255,0.11);
-  --glass-border: rgba(255,255,255,0.15);
+  --text2:        #9292c4;
+  --text3:        #7070a8;
+  --glass:        rgba(255,255,255,0.09);
+  --glass-strong: rgba(255,255,255,0.14);
+  --glass-border: rgba(255,255,255,0.18);
   --shadow-sm:
     0 2px 12px rgba(0,0,0,0.40),
     inset 0 1px 0 rgba(255,255,255,0.10),
@@ -407,10 +407,12 @@ body.dark .pick-item { background:rgba(255,255,255,.07); box-shadow:inset 0 1px 
 body.dark .retour-item { background:rgba(255,255,255,.07); box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 0 0 0.5px rgba(255,255,255,.09),0 2px 8px rgba(0,0,0,.25); }
 
 /* Buttons */
-body.dark .cancel-btn { background:rgba(255,255,255,.08); color:var(--text2); }
-body.dark .cancel-btn:hover { background:rgba(255,255,255,.12); }
+body.dark .add-btn { background:linear-gradient(135deg,#2a50a8,#1e3f8a); box-shadow:0 4px 16px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.16),0 0 0 0.5px rgba(80,140,255,.28); }
+body.dark .btn-primary { background:linear-gradient(135deg,#2a50a8,#1e3f8a); box-shadow:0 6px 20px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.16),0 0 0 0.5px rgba(80,140,255,.28); }
+body.dark .cancel-btn { background:rgba(255,255,255,.10); color:var(--text2); }
+body.dark .cancel-btn:hover { background:rgba(255,255,255,.15); }
 body.dark .step-btn { background:rgba(255,255,255,.15); color:var(--blue); box-shadow:0 2px 8px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.18); }
-body.dark .qr-btn { background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.11); color:var(--text); }
+body.dark .qr-btn { background:rgba(255,255,255,.10); border-color:rgba(255,255,255,.15); color:var(--text); }
 body.dark .profile-btn-name { color:var(--text); }
 
 /* Misc */
