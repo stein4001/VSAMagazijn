@@ -351,7 +351,10 @@ document.getElementById('klant-input')?.addEventListener('focus', () => vulKlant
 
 document.getElementById('klant-input')?.addEventListener('blur', async () => {
   if (!activePicklijstId) return;
-  const klant = document.getElementById('klant-input').value.trim();
+  const input = document.getElementById('klant-input');
+  const getypt = input.value.trim();
+  const klant = matchKlantNaam(getypt);
+  if (klant !== getypt) input.value = klant;
   try { await API.updatePicklijst(activePicklijstId, { klant: klant || null }); } catch {}
 });
 
@@ -909,12 +912,23 @@ document.getElementById('klant-form')?.addEventListener('submit', async (e) => {
 document.getElementById('klant-modal-close')?.addEventListener('click', () =>
   document.getElementById('klant-modal').classList.remove('open'));
 
+let _klanten = [];
+
 async function vulKlantenDatalist() {
   try {
-    const klanten = await API.getKlanten();
+    _klanten = await API.getKlanten();
     const dl = document.getElementById('klant-datalist');
-    if (dl) dl.innerHTML = klanten.map(k => `<option value="${esc(k.naam)}">`).join('');
+    if (dl) dl.innerHTML = _klanten.map(k => `<option value="${esc(k.naam)}">`).join('');
   } catch {}
+}
+
+function matchKlantNaam(invoer) {
+  if (!invoer || !_klanten.length) return invoer;
+  const lower = invoer.toLowerCase();
+  const exact = _klanten.find(k => k.naam.toLowerCase() === lower);
+  if (exact) return exact.naam;
+  const deels = _klanten.filter(k => k.naam.toLowerCase().includes(lower));
+  return deels.length === 1 ? deels[0].naam : invoer;
 }
 
 // ── ADMIN GEBRUIKERS ──────────────────────────────────────────────────────────
