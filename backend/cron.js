@@ -14,16 +14,18 @@ async function checkOpenLijsten() {
   console.log('[cron] Controleer openstaande picklijsten...');
   try {
     const lijsten = db.prepare(`
-      SELECT p.*, g.email AS gebruiker_email, g.naam AS gebruiker_naam
+      SELECT p.*, g.email AS gebruiker_email, g.naam AS gebruiker_naam,
+             CAST(julianday('now') - julianday(p.aangemaakt) AS INTEGER) AS dagen_open
       FROM picklijsten p
       JOIN gebruikers g ON g.id = p.gebruiker_id
       WHERE p.status IN ('actief','wacht_retour')
-        AND p.herinnering_gestuurd IS NULL
         AND (julianday('now') - julianday(p.aangemaakt)) >= ?
+        AND (p.herinnering_gestuurd IS NULL
+             OR (julianday('now') - julianday(p.herinnering_gestuurd)) >= 1)
     `).all(MAX_DAGEN);
 
     for (const lijst of lijsten) {
-      await stuurHerinneringNotif(lijst, lijst.gebruiker_email, MAX_DAGEN);
+      await stuurHerinneringNotif(lijst, lijst.gebruiker_email, lijst.dagen_open);
       db.prepare("UPDATE picklijsten SET herinnering_gestuurd = datetime('now') WHERE id = ?")
         .run(lijst.id);
       console.log(`[cron] Herinnering gestuurd voor lijst ${lijst.id} naar ${lijst.gebruiker_email}`);

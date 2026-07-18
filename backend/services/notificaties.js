@@ -49,13 +49,13 @@ async function stuurAfgerondNotif(picklijst) {
   });
 }
 
-async function stuurHerinneringNotif(picklijst, gebruikerEmail, maxDagen) {
+async function stuurHerinneringNotif(picklijst, gebruikerEmail, dagenOpen) {
   if (!gebruikerEmail) return;
   await stuurMail({
     aan: gebruikerEmail,
-    onderwerp: `⏰ Herinnering: picklijst staat al ${maxDagen}+ dagen open`,
+    onderwerp: `⏰ Herinnering: picklijst staat al ${dagenOpen} dagen open`,
     html: baseHtml(`
-      <p>Je hebt een picklijst die al meer dan <strong>${maxDagen} dagen</strong> open staat.</p>
+      <p>Je hebt een picklijst die al <strong>${dagenOpen} dagen</strong> open staat.</p>
       <table style="width:100%;font-size:14px;border-collapse:collapse">
         ${picklijst.klant ? `<tr><td style="padding:6px 0;color:#5a5a7a;width:120px">Klant</td><td style="font-weight:700">${esc(picklijst.klant)}</td></tr>` : ''}
         <tr><td style="padding:6px 0;color:#5a5a7a">Status</td><td>${esc(picklijst.status)}</td></tr>
