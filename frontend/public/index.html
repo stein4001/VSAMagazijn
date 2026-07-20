@@ -340,11 +340,19 @@
           style="height:38px;font-size:13px;flex:0 0 auto;padding:0 20px">
           + Nieuwe klant
         </button>
+        <button class="add-btn" onclick="exportKlanten()"
+          style="height:38px;font-size:13px;flex:0 0 auto;padding:0 16px;background:rgba(37,160,106,.15);color:var(--green);box-shadow:none;border:1px solid rgba(37,160,106,.3)">
+          ↓ Exporteer CSV
+        </button>
+        <label class="add-btn" style="height:38px;font-size:13px;flex:0 0 auto;padding:0 16px;background:rgba(58,123,213,.12);color:var(--blue);box-shadow:none;border:1px solid rgba(58,123,213,.25);cursor:pointer;display:flex;align-items:center">
+          ↑ Importeer CSV
+          <input type="file" id="klant-import-file" accept=".csv" style="display:none" onchange="importKlanten(this)">
+        </label>
       </div>
       <div class="tbl-wrap">
         <table>
           <thead><tr>
-            <th>Naam</th><th>Notities</th><th>Aangemaakt</th><th></th>
+            <th>Naam</th><th>Notities</th><th></th>
           </tr></thead>
           <tbody id="klant-tbody"></tbody>
         </table>

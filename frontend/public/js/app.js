@@ -846,18 +846,17 @@ document.getElementById('art-modal-close')?.addEventListener('click', () =>
 
 async function loadKlanten() {
   const body = document.getElementById('klant-tbody');
-  body.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text3)">Laden…</td></tr>';
+  body.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--text3)">Laden…</td></tr>';
   try {
     const klanten = await API.getKlanten();
     if (!klanten.length) {
-      body.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text3)">Geen klanten gevonden.</td></tr>';
+      body.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--text3)">Geen klanten gevonden.</td></tr>';
       return;
     }
     body.innerHTML = klanten.map(k => `
       <tr>
         <td class="td-bold" data-label="Naam">${esc(k.naam)}</td>
         <td data-label="Notities" style="color:var(--text2);font-size:12px">${k.notities ? esc(k.notities) : '<span style="color:var(--text3)">—</span>'}</td>
-        <td data-label="Aangemaakt" style="color:var(--text2);font-size:12px">${formatDatum(k.aangemaakt)}</td>
         <td style="display:flex;gap:8px;align-items:center">
           <button class="retour-action" style="background:none;border:none;padding:0;margin-left:auto" onclick="openKlantModal('${k.id}')">Wijzig ›</button>
         </td>
@@ -1094,6 +1093,24 @@ window.importArtikelen = async function(input) {
   try {
     const result = await API.importArtikelen(text);
     loadAdminArtikelen();
+    showToast(`✓ Import klaar: ${result.aangemaakt} nieuw, ${result.bijgewerkt} bijgewerkt${result.fouten ? ', ' + result.fouten + ' fout(en)' : ''}`);
+  } catch (err) { showToast('Import mislukt: ' + err.message, true); }
+};
+
+window.exportKlanten = () => downloadCsv(
+  API.exportKlanten(),
+  `klanten-${new Date().toISOString().slice(0,10)}.csv`
+);
+
+window.importKlanten = async function(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const text = await file.text();
+  input.value = '';
+  try {
+    const result = await API.importKlanten(text);
+    loadKlanten();
+    vulKlantenDatalist();
     showToast(`✓ Import klaar: ${result.aangemaakt} nieuw, ${result.bijgewerkt} bijgewerkt${result.fouten ? ', ' + result.fouten + ' fout(en)' : ''}`);
   } catch (err) { showToast('Import mislukt: ' + err.message, true); }
 };

@@ -92,7 +92,9 @@ export const updateGebruiker     = (id, body) => req('PUT', `/gebruikers/${id}`,
 export const deleteGebruiker     = (id)   => req('DELETE', `/gebruikers/${id}`);
 
 // ── KLANTEN ───────────────────────────────────────────────────────────────────
-export const getKlanten    = ()           => req('GET',    '/klanten');
-export const createKlant   = (body)       => req('POST',   '/klanten', body);
-export const updateKlant   = (id, body)   => req('PUT',    `/klanten/${id}`, body);
-export const deleteKlant   = (id)         => req('DELETE', `/klanten/${id}`);
+export const getKlanten      = ()           => req('GET',    '/klanten');
+export const createKlant     = (body)       => req('POST',   '/klanten', body);
+export const updateKlant     = (id, body)   => req('PUT',    `/klanten/${id}`, body);
+export const deleteKlant     = (id)         => req('DELETE', `/klanten/${id}`);
+export const exportKlanten   = ()           => '/api/klanten/export/csv';
+export const importKlanten   = (csv)        => req('POST',   '/klanten/import/csv', csv, 'text/plain');
