@@ -21,7 +21,7 @@ async function checkOpenLijsten() {
       WHERE p.status IN ('actief','wacht_retour')
         AND (julianday('now') - julianday(p.aangemaakt)) >= ?
         AND (p.herinnering_gestuurd IS NULL
-             OR (julianday('now') - julianday(p.herinnering_gestuurd)) >= 1)
+             OR date(p.herinnering_gestuurd) < date('now'))
     `).all(MAX_DAGEN);
 
     for (const lijst of lijsten) {
