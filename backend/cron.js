@@ -18,7 +18,7 @@ async function checkOpenLijsten() {
              CAST(julianday('now') - julianday(p.aangemaakt) AS INTEGER) AS dagen_open
       FROM picklijsten p
       JOIN gebruikers g ON g.id = p.gebruiker_id
-      WHERE p.status IN ('actief','wacht_retour')
+      WHERE p.status = 'wacht_retour'
         AND (julianday('now') - julianday(p.aangemaakt)) >= ?
         AND (p.herinnering_gestuurd IS NULL
              OR date(p.herinnering_gestuurd) < date('now'))
