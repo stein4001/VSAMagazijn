@@ -94,7 +94,6 @@ router.post('/', requireAuth, (req, res) => {
   const { notities, klant } = req.body;
   const id = uuid();
 
-  if (klant) upsertKlant(klant);
   db.prepare(`
     INSERT INTO picklijsten (id, gebruiker_id, status, klant, notities)
     VALUES (?, ?, 'actief', ?, ?)
@@ -174,7 +173,6 @@ router.patch('/:id', requireAuth, (req, res) => {
     return res.status(400).json({ error: 'Lijst is niet meer bewerkbaar' });
   }
   const { klant, projectnummer } = req.body;
-  if (klant) upsertKlant(klant);
   db.prepare("UPDATE picklijsten SET klant = ?, projectnummer = ? WHERE id = ?")
     .run(klant ?? lijst.klant, projectnummer !== undefined ? projectnummer : lijst.projectnummer, req.params.id);
   res.json(getPicklijstMetRegels(req.params.id));
@@ -199,6 +197,7 @@ router.post('/:id/verstuur', requireAuth, (req, res) => {
     return res.status(400).json({ error: 'Lijst bevat geen artikelen' });
   }
 
+  if (lijst.klant) upsertKlant(lijst.klant);
   db.prepare(`
     UPDATE picklijsten SET status = 'wacht_retour', verstuurd_op = datetime('now') WHERE id = ?
   `).run(req.params.id);
