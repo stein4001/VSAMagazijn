@@ -189,6 +189,10 @@ router.post('/:id/verstuur', requireAuth, (req, res) => {
     return res.status(400).json({ error: `Lijst heeft status '${lijst.status}'` });
   }
 
+  if (!lijst.klant) {
+    return res.status(400).json({ error: 'Klant is verplicht voor het versturen' });
+  }
+
   const aantalRegels = db.prepare(
     'SELECT COUNT(*) as n FROM picklijst_regels WHERE picklijst_id = ?'
   ).get(req.params.id).n;

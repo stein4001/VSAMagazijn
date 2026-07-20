@@ -433,6 +433,12 @@ window.deleteRegel = async function(regelId) {
 
 document.getElementById('send-btn')?.addEventListener('click', async () => {
   if (!activePicklijstId) return;
+  const klant = document.getElementById('klant-input').value.trim();
+  if (!klant) {
+    showToast('Vul eerst een klant in', true);
+    document.getElementById('klant-input').focus();
+    return;
+  }
   const btn = document.getElementById('send-btn');
   btn.disabled = true;
   try {
