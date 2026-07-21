@@ -114,13 +114,8 @@ function showApp() {
   document.getElementById('menu-rol').textContent   = u?.rol || '';
   document.getElementById('nav-admin-tab').style.display = API.auth.isAdmin ? '' : 'none';
 
-  if (API.auth.isAdmin) {
-    showScreen('admin');
-    initAdmin();
-  } else {
-    showScreen('main');
-    initWorker();
-  }
+  showScreen('main');
+  initWorker();
 }
 
 // ── LOGIN ─────────────────────────────────────────────────────────────────────
