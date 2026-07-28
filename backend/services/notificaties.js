@@ -10,7 +10,7 @@ function baseHtml(inhoud) {
       <div style="height:1px;background:#d0d8e8;margin:16px 0"></div>
       ${inhoud}
     </div>
-    <p style="font-size:11px;color:#9090b0;margin-top:16px;text-align:center">Dit is een automatisch bericht van het Magazijn systeem.</p>
+    <p style="font-size:11px;color:#9090b0;margin-top:16px;text-align:center">Magazijn systeem — log in om details te bekijken.</p>
   </body></html>`;
 }
 
@@ -19,7 +19,7 @@ async function stuurNieuweLijstNotif(picklijst) {
   if (!aan) return;
   await stuurMail({
     aan,
-    onderwerp: `📋 Nieuwe picklijst aangemaakt — ${picklijst.gebruiker_naam}`,
+    onderwerp: `Nieuwe picklijst aangemaakt — ${picklijst.gebruiker_naam}`,
     html: baseHtml(`
       <p>Er is een nieuwe picklijst aangemaakt.</p>
       <table style="width:100%;font-size:14px;border-collapse:collapse">
@@ -36,7 +36,7 @@ async function stuurAfgerondNotif(picklijst) {
   if (!aan) return;
   await stuurMail({
     aan,
-    onderwerp: `✅ Picklijst afgerond — ${picklijst.klant || picklijst.gebruiker_naam}`,
+    onderwerp: `Picklijst afgerond — ${picklijst.klant || picklijst.gebruiker_naam}`,
     html: baseHtml(`
       <p>Een picklijst is afgerond en klaar voor verwerking.</p>
       <table style="width:100%;font-size:14px;border-collapse:collapse">
@@ -53,7 +53,7 @@ async function stuurHerinneringNotif(picklijst, gebruikerEmail, dagenOpen) {
   if (!gebruikerEmail) return;
   await stuurMail({
     aan: gebruikerEmail,
-    onderwerp: `⏰ Herinnering: picklijst staat al ${dagenOpen} dagen open`,
+    onderwerp: `Herinnering: picklijst staat al ${dagenOpen} dagen open`,
     html: baseHtml(`
       <p>Je hebt een picklijst die al <strong>${dagenOpen} dagen</strong> open staat.</p>
       <table style="width:100%;font-size:14px;border-collapse:collapse">

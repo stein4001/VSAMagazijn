@@ -1,5 +1,5 @@
 // backend/services/mail.js
-// E-mail verzenden via Microsoft Graph API (client credentials)
+// E-mail verzenden via Microsoft Graph API (MIME multipart/alternative)
 
 async function getGraphToken() {
   const res = await fetch(
@@ -20,28 +20,62 @@ async function getGraphToken() {
   return data.access_token;
 }
 
-async function stuurMail({ aan, onderwerp, html }) {
+function b64(str) {
+  const encoded = Buffer.from(str, 'utf-8').toString('base64');
+  return encoded.match(/.{1,76}/g).join('\r\n');
+}
+
+function stripHtml(html) {
+  return html
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+async function stuurMail({ aan, onderwerp, html, tekst }) {
   if (!process.env.AZURE_TENANT_ID || !process.env.MAIL_FROM) {
     console.warn('[mail] Azure niet geconfigureerd, mail overgeslagen:', onderwerp);
     return;
   }
   try {
     const token = await getGraphToken();
+    const boundary = 'mz_' + Date.now();
+    const plainTekst = tekst || stripHtml(html);
+
+    const mime = [
+      'MIME-Version: 1.0',
+      `To: ${aan}`,
+      `From: ${process.env.MAIL_FROM}`,
+      `Subject: ${onderwerp}`,
+      `Content-Type: multipart/alternative; boundary="${boundary}"`,
+      '',
+      `--${boundary}`,
+      'Content-Type: text/plain; charset=utf-8',
+      'Content-Transfer-Encoding: base64',
+      '',
+      b64(plainTekst),
+      '',
+      `--${boundary}`,
+      'Content-Type: text/html; charset=utf-8',
+      'Content-Transfer-Encoding: base64',
+      '',
+      b64(html),
+      '',
+      `--${boundary}--`,
+    ].join('\r\n');
+
     const res = await fetch(
       `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(process.env.MAIL_FROM)}/sendMail`,
       {
         method: 'POST',
         headers: {
           'Authorization': 'Bearer ' + token,
-          'Content-Type': 'application/json',
+          'Content-Type': 'text/plain',
         },
-        body: JSON.stringify({
-          message: {
-            subject: onderwerp,
-            body: { contentType: 'HTML', content: html },
-            toRecipients: [{ emailAddress: { address: aan } }],
-          },
-        }),
+        body: mime,
       }
     );
     if (!res.ok) {

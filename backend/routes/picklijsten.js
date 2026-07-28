@@ -5,7 +5,7 @@ const router = express.Router();
 const { v4: uuid } = require('uuid');
 const db = require('../db');
 const { requireAuth, requireAdmin } = require('../auth');
-const { stuurNieuweLijstNotif, stuurAfgerondNotif } = require('../services/notificaties');
+const { stuurNieuweLijstNotif, stuurAfgerondNotif, stuurHerinneringNotif } = require('../services/notificaties');
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -276,6 +276,31 @@ router.post('/:id/annuleer', requireAuth, (req, res) => {
   }
   db.prepare("UPDATE picklijsten SET status = 'geannuleerd' WHERE id = ?").run(req.params.id);
   res.json({ ok: true });
+});
+
+// POST /api/picklijsten/:id/stuur-herinnering — admin stuurt handmatige herinnering naar medewerker
+router.post('/:id/stuur-herinnering', requireAdmin, async (req, res) => {
+  const lijst = db.prepare(`
+    SELECT p.*, g.email AS gebruiker_email, g.naam AS gebruiker_naam,
+           CAST(julianday('now') - julianday(p.aangemaakt) AS INTEGER) AS dagen_open
+    FROM picklijsten p
+    JOIN gebruikers g ON g.id = p.gebruiker_id
+    WHERE p.id = ?
+  `).get(req.params.id);
+  if (!lijst) return res.status(404).json({ error: 'Lijst niet gevonden' });
+  if (!['actief', 'wacht_retour'].includes(lijst.status)) {
+    return res.status(400).json({ error: 'Kan alleen herinnering sturen voor een open lijst' });
+  }
+  if (!lijst.gebruiker_email) {
+    return res.status(400).json({ error: 'Medewerker heeft geen e-mailadres' });
+  }
+  try {
+    await stuurHerinneringNotif(lijst, lijst.gebruiker_email, lijst.dagen_open);
+    db.prepare("UPDATE picklijsten SET herinnering_gestuurd = datetime('now') WHERE id = ?").run(lijst.id);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Mail versturen mislukt: ' + err.message });
+  }
 });
 
 // DELETE /api/picklijsten/:id — verwijder picklijst (admin)
