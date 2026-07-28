@@ -75,7 +75,7 @@ async function stuurMail({ aan, onderwerp, html, tekst }) {
           'Authorization': 'Bearer ' + token,
           'Content-Type': 'text/plain',
         },
-        body: mime,
+        body: Buffer.from(mime, 'utf-8').toString('base64'),
       }
     );
     if (!res.ok) {
