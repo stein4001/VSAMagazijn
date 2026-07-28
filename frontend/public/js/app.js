@@ -645,7 +645,7 @@ async function loadAdminLists() {
         <td style="display:flex;gap:8px;align-items:center">
           ${l.status==='wacht_retour'?`<span class="retour-action" onclick="event.stopPropagation();openRetour('${l.id}')">Verwerk ›</span>`:''}
           ${l.status==='wacht_verwerking'?`<span class="retour-action" style="color:var(--purple)" onclick="event.stopPropagation();openAfronden('${l.id}')">Rond af ›</span>`:''}
-          ${['actief','wacht_retour'].includes(l.status)?`<button class="pick-del" title="Stuur herinnering" style="color:var(--orange);border-color:rgba(232,118,42,.3)" onclick="event.stopPropagation();stuurHerinneringVoorLijst('${l.id}')">🔔</button>`:''}
+          ${['actief','wacht_retour'].includes(l.status)?`<span class="retour-action" style="color:var(--orange)" onclick="event.stopPropagation();stuurHerinneringVoorLijst('${l.id}')">Herinnering ›</span>`:''}
           <button class="pick-del" title="Verwijderen" onclick="event.stopPropagation();verwijderPicklijst('${l.id}')">✕</button>
         </td>
       </tr>
