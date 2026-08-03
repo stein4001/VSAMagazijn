@@ -504,18 +504,41 @@ window.deleteRegel = async function(regelId) {
   } catch (err) { showToast(err.message, true); }
 };
 
-document.getElementById('send-btn')?.addEventListener('click', async () => {
+document.getElementById('send-btn')?.addEventListener('click', () => {
   if (!activePicklijstId) return;
+  openVerstuurModal();
+});
+
+function openVerstuurModal() {
   const klant = document.getElementById('klant-input').value.trim();
+  document.getElementById('verstuur-modal-sub').textContent =
+    document.getElementById('pick-count')?.textContent || '';
+  document.getElementById('verstuur-klant').value = klant;
+  document.getElementById('verstuur-notities').value = '';
+  const dl = document.getElementById('verstuur-klant-datalist');
+  if (dl) dl.innerHTML = document.getElementById('klant-datalist')?.innerHTML || '';
+  document.getElementById('verstuur-modal').classList.add('open');
+  setTimeout(() => {
+    if (!klant) document.getElementById('verstuur-klant').focus();
+    else document.getElementById('verstuur-notities').focus();
+  }, 320);
+}
+
+document.getElementById('verstuur-modal-confirm')?.addEventListener('click', async () => {
+  const klant = document.getElementById('verstuur-klant').value.trim();
   if (!klant) {
     showToast('Vul eerst een klant in', true);
-    document.getElementById('klant-input').focus();
+    document.getElementById('verstuur-klant').focus();
     return;
   }
-  const btn = document.getElementById('send-btn');
+  const notities = document.getElementById('verstuur-notities').value.trim() || null;
+  const btn = document.getElementById('verstuur-modal-confirm');
   btn.disabled = true;
   try {
+    await API.updatePicklijst(activePicklijstId, { klant, notities });
+    document.getElementById('klant-input').value = klant;
     await API.verstuurPicklijst(activePicklijstId);
+    document.getElementById('verstuur-modal').classList.remove('open');
     activePicklijstId = null;
     await renderPicklist();
     showToast('✓ Picklijst verstuurd');
@@ -523,6 +546,14 @@ document.getElementById('send-btn')?.addEventListener('click', async () => {
     showToast(err.message, true);
     btn.disabled = false;
   }
+});
+
+document.getElementById('verstuur-modal-cancel')?.addEventListener('click', () =>
+  document.getElementById('verstuur-modal').classList.remove('open'));
+document.getElementById('verstuur-modal-close')?.addEventListener('click', () =>
+  document.getElementById('verstuur-modal').classList.remove('open'));
+document.getElementById('verstuur-modal')?.addEventListener('click', e => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
 });
 
 // ── MIJN LIJSTEN ─────────────────────────────────────────────────────────────

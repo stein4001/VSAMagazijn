@@ -372,6 +372,34 @@
      MODALS
 ══════════════════════════════════════ -->
 
+<!-- Versturen modal -->
+<div class="modal-bg" id="verstuur-modal">
+  <div class="modal" style="border-radius:var(--r-xl)">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div class="modal-title">Picklijst versturen</div>
+      <button id="verstuur-modal-close" style="background:rgba(0,0,0,.06);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:16px">✕</button>
+    </div>
+    <div class="modal-sub" id="verstuur-modal-sub" style="margin-bottom:18px"></div>
+    <div class="form-group">
+      <label class="form-label">Klant</label>
+      <input class="form-input" id="verstuur-klant" placeholder="Klantnaam (verplicht)"
+        list="verstuur-klant-datalist" autocomplete="off">
+      <datalist id="verstuur-klant-datalist"></datalist>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notities
+        <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--text3)"> — optioneel</span>
+      </label>
+      <textarea class="form-input" id="verstuur-notities"
+        placeholder="Bijv. afleveren bij receptie, 3e verdieping…"
+        style="height:88px;padding-top:12px;resize:none;line-height:1.5"></textarea>
+    </div>
+    <button class="send-btn" id="verstuur-modal-confirm">Verstuur picklijst ›</button>
+    <button class="cancel-btn" id="verstuur-modal-cancel" style="margin-top:8px">Annuleer</button>
+  </div>
+</div>
+
 <!-- Hoeveelheid modal (na scannen) -->
 <div class="modal-bg" id="qty-modal">
   <div class="modal" style="border-radius:var(--r-xl)">
