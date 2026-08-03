@@ -9,6 +9,7 @@ let activePicklijstId = null;
 let scanner = null;
 let retourListId = null;
 let adminFilter = '';
+let _currentArtikel = null;
 
 // Data-caches voor client-side zoekfilter
 let _listsCache = [];
@@ -355,30 +356,37 @@ async function handleScanResult(code) {
 }
 
 function showScannedArtikel(artikel) {
+  _currentArtikel = artikel;
   const isSN = artikel.eenheid === 'SN';
-  document.getElementById('scanned-name').textContent  = artikel.naam;
-  document.getElementById('scanned-code').textContent  = artikel.qr_code;
-  document.getElementById('unit-tag').textContent      = artikel.eenheid;
+
+  document.getElementById('scanned-name').textContent = artikel.naam;
+  document.getElementById('scanned-code').textContent = artikel.qr_code;
   document.getElementById('scanned-result').classList.add('show');
   document.getElementById('scan-placeholder').style.display = 'none';
   document.getElementById('scan-vp').classList.add('scanned');
   const startBtn = document.getElementById('scan-start-btn');
   startBtn.textContent = '📷 Opnieuw scannen';
   startBtn.onclick = startScanner;
-  // Toon qty-stepper of SN-invoer afhankelijk van eenheid
-  document.getElementById('qty-wrap').style.display = isSN ? 'none' : '';
-  document.getElementById('sn-wrap').style.display  = isSN ? '' : 'none';
-  document.getElementById('sn-input').value = '';
-  document.getElementById('amt-card').style.opacity    = '1';
-  document.getElementById('amt-card').style.pointerEvents = 'auto';
-  document.getElementById('qty-input').value = 1;
-  document.getElementById('add-btn').disabled = false;
-  document.getElementById('add-btn').dataset.artikelId = artikel.id;
-  document.getElementById('add-btn').dataset.eenheid   = artikel.eenheid;
+
+  document.getElementById('qty-modal-naam').textContent = artikel.naam;
+  document.getElementById('qty-modal-code').textContent = artikel.qr_code;
+  document.getElementById('qty-modal-unit').textContent = artikel.eenheid;
+  document.getElementById('qty-modal-qty-wrap').style.display = isSN ? 'none' : '';
+  document.getElementById('qty-modal-sn-wrap').style.display  = isSN ? '' : 'none';
+  document.getElementById('qty-modal-input').value = 1;
+  document.getElementById('qty-modal-sn').value = '';
+  document.getElementById('qty-modal-add').disabled = false;
+  document.getElementById('qty-modal').classList.add('open');
+
+  setTimeout(() => {
+    if (isSN) document.getElementById('qty-modal-sn').focus();
+    else document.getElementById('qty-modal-input').select();
+  }, 320);
 }
 
 // Reset scanner viewport
 function resetScanVP() {
+  document.getElementById('qty-modal')?.classList.remove('open');
   document.getElementById('scanned-result').classList.remove('show');
   document.getElementById('scan-placeholder').style.display = '';
   document.getElementById('scan-vp').classList.remove('scanned');
@@ -387,24 +395,59 @@ function resetScanVP() {
   btn.disabled = false;
   btn.textContent = '📷 Camera starten';
   btn.onclick = startScanner;
-  document.getElementById('amt-card').style.opacity = '0.4';
-  document.getElementById('amt-card').style.pointerEvents = 'none';
-  document.getElementById('add-btn').disabled = true;
   document.getElementById('manual-qr-wrap').style.display = 'none';
   document.getElementById('manual-qr-input').value = '';
-  document.getElementById('qty-wrap').style.display = '';
-  document.getElementById('sn-wrap').style.display = 'none';
-  document.getElementById('sn-input').value = '';
+  _clearArtSuggestions();
+  _currentArtikel = null;
 }
 
-// Stepper
-document.getElementById('qty-minus')?.addEventListener('click', () => {
-  const i = document.getElementById('qty-input');
+// Hoeveelheid modal — stepper
+document.getElementById('qty-modal-minus')?.addEventListener('click', () => {
+  const i = document.getElementById('qty-modal-input');
   i.value = Math.max(1, (parseInt(i.value)||1) - 1);
 });
-document.getElementById('qty-plus')?.addEventListener('click', () => {
-  const i = document.getElementById('qty-input');
+document.getElementById('qty-modal-plus')?.addEventListener('click', () => {
+  const i = document.getElementById('qty-modal-input');
   i.value = (parseInt(i.value)||1) + 1;
+});
+
+// Hoeveelheid modal — toevoegen
+document.getElementById('qty-modal-add')?.addEventListener('click', async () => {
+  if (!_currentArtikel) return;
+  const btn = document.getElementById('qty-modal-add');
+  const isSN = _currentArtikel.eenheid === 'SN';
+  const qty = isSN ? 1 : (parseInt(document.getElementById('qty-modal-input').value) || 1);
+  const sn  = isSN ? document.getElementById('qty-modal-sn').value.trim() : null;
+
+  if (isSN && !sn) { showToast('Vul een serienummer in', true); return; }
+
+  btn.disabled = true;
+  try {
+    if (!activePicklijstId) {
+      const klant = document.getElementById('klant-input').value.trim();
+      const lijst = await API.createPicklijst(klant ? { klant } : {});
+      activePicklijstId = lijst.id;
+    }
+    const regelBody = { artikel_id: _currentArtikel.id, meegenomen: qty };
+    if (sn) regelBody.serienummer = sn;
+    await API.addRegel(activePicklijstId, regelBody);
+    document.getElementById('qty-modal').classList.remove('open');
+    await renderPicklist();
+    resetScanVP();
+  } catch (err) {
+    showToast(err.message, true);
+    btn.disabled = false;
+  }
+});
+
+function _closeQtyModal() {
+  document.getElementById('qty-modal').classList.remove('open');
+  resetScanVP();
+}
+document.getElementById('qty-modal-cancel')?.addEventListener('click', _closeQtyModal);
+document.getElementById('qty-modal-close')?.addEventListener('click', _closeQtyModal);
+document.getElementById('qty-modal')?.addEventListener('click', e => {
+  if (e.target === e.currentTarget) _closeQtyModal();
 });
 
 // ── KLANT ────────────────────────────────────────────────────────────────────
@@ -420,37 +463,6 @@ document.getElementById('klant-input')?.addEventListener('blur', async () => {
 });
 
 // ── PICKLIJST ─────────────────────────────────────────────────────────────────
-document.getElementById('add-btn')?.addEventListener('click', async () => {
-  const btn = document.getElementById('add-btn');
-  const artikelId = btn.dataset.artikelId;
-  const isSN = btn.dataset.eenheid === 'SN';
-  const qty = isSN ? 1 : (parseInt(document.getElementById('qty-input').value) || 1);
-  const sn = isSN ? document.getElementById('sn-input').value.trim() : null;
-
-  if (isSN && !sn) {
-    showToast('Vul een serienummer in', true);
-    return;
-  }
-
-  btn.disabled = true;
-
-  try {
-    if (!activePicklijstId) {
-      const klant = document.getElementById('klant-input').value.trim();
-      const lijst = await API.createPicklijst(klant ? { klant } : {});
-      activePicklijstId = lijst.id;
-    }
-
-    const regelBody = { artikel_id: artikelId, meegenomen: qty };
-    if (sn) regelBody.serienummer = sn;
-    await API.addRegel(activePicklijstId, regelBody);
-    await renderPicklist();
-    resetScanVP();
-  } catch (err) {
-    showToast(err.message, true);
-    btn.disabled = false;
-  }
-});
 
 async function renderPicklist() {
   const c   = document.getElementById('pick-items');
