@@ -377,7 +377,9 @@ body.dark .admin-search{background:rgba(255,255,255,.08);border-color:rgba(255,2
 body.dark {
   --text:         #eaeaf5;
   --text2:        #9292c4;
-  --text3:        #7070a8;
+  --text3:        #9090c4;
+  --blue:         #6ba8ff;
+  --blue-l:       rgba(107,168,255,0.15);
   --glass:        rgba(255,255,255,0.09);
   --glass-strong: rgba(255,255,255,0.14);
   --glass-border: rgba(255,255,255,0.18);
@@ -419,8 +421,9 @@ body.dark .profile-btn:hover { background:rgba(255,255,255,.07); }
 
 /* Inputs */
 body.dark .form-input { background:rgba(255,255,255,.08); color:var(--text); box-shadow:inset 0 1px 0 rgba(255,255,255,.09),inset 0 -1px 0 rgba(0,0,0,.2),0 0 0 0.5px rgba(255,255,255,.09),0 1px 4px rgba(0,0,0,.25); }
-body.dark .form-input:focus { background:rgba(255,255,255,.11); box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 0 0 2px rgba(28,58,110,.45),0 0 0 0.5px rgba(28,58,110,.55); }
+body.dark .form-input:focus { background:rgba(255,255,255,.11); box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 0 0 2px rgba(107,168,255,.40),0 0 0 0.5px rgba(107,168,255,.55); }
 body.dark .retour-input { background:rgba(255,255,255,.10); border-color:rgba(255,255,255,.14); color:var(--text); }
+body.dark .retour-input:focus { border-color:var(--blue); }
 body.dark .fsel { background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.12); color:var(--text); }
 
 /* Modal */
@@ -450,13 +453,18 @@ body.dark .pick-item { background:rgba(255,255,255,.07); box-shadow:inset 0 1px 
 body.dark .retour-item { background:rgba(255,255,255,.07); box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 0 0 0.5px rgba(255,255,255,.09),0 2px 8px rgba(0,0,0,.25); }
 
 /* Buttons */
-body.dark .add-btn { background:linear-gradient(135deg,#2a50a8,#1e3f8a); box-shadow:0 4px 16px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.16),0 0 0 0.5px rgba(80,140,255,.28); }
-body.dark .btn-primary { background:linear-gradient(135deg,#2a50a8,#1e3f8a); box-shadow:0 6px 20px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.16),0 0 0 0.5px rgba(80,140,255,.28); }
+body.dark .add-btn { background:linear-gradient(135deg,#2a50a8,#1e3f8a); box-shadow:0 4px 16px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.16),0 0 0 0.5px rgba(107,168,255,.28); }
+body.dark .btn-primary { background:linear-gradient(135deg,#2a50a8,#1e3f8a); box-shadow:0 6px 20px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.16),0 0 0 0.5px rgba(107,168,255,.28); }
 body.dark .cancel-btn { background:rgba(255,255,255,.10); color:var(--text2); }
 body.dark .cancel-btn:hover { background:rgba(255,255,255,.15); }
 body.dark .step-btn { background:rgba(255,255,255,.15); color:var(--blue); box-shadow:0 2px 8px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.18); }
 body.dark .qr-btn { background:rgba(255,255,255,.10); border-color:rgba(255,255,255,.15); color:var(--text); }
 body.dark .profile-btn-name { color:var(--text); }
+body.dark .btn-dymo { border-color:rgba(107,168,255,.28); color:var(--blue); }
+body.dark .btn-dymo:hover { background:var(--blue-l); border-color:var(--blue); }
+body.dark .pick-dot { background:linear-gradient(135deg,#4a80d4,#8b5cf6); }
+body.dark .admin-search:focus { box-shadow:0 0 0 2px rgba(107,168,255,.35); }
+body.dark .nav-logo-icon,.dark .login-logo-icon { background:linear-gradient(160deg,#2a50a8,#1a3a88); }
 
 /* Misc */
 body.dark .chip { background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.11); }
