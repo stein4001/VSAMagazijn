@@ -315,6 +315,23 @@ tbody td { padding:13px 16px; font-size:13px; }
 .toast.show { transform:translateX(-50%) translateY(0); }
 .toast.error { background:rgba(180,30,30,.9); }
 
+/* ── TAB ANIMATIE ── */
+@keyframes tabFadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.tab-enter{animation:tabFadeIn .22s cubic-bezier(.22,1,.36,1) forwards;}
+
+/* ── PICKLIJST VOORTGANGSINDICATOR ── */
+.list-progress{display:flex;align-items:center;margin-top:8px;gap:0;}
+.lp-step{width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:all .2s;}
+.lp-step.done{background:var(--green);}
+.lp-step.current{width:9px;height:9px;background:var(--blue);box-shadow:0 0 0 3px rgba(28,58,110,.18);}
+.lp-step.pending{background:rgba(0,0,0,.13);}
+.lp-line{flex:1;height:2px;border-radius:1px;}
+.lp-line.done{background:var(--green);}
+.lp-line.pending{background:rgba(0,0,0,.10);}
+body.dark .lp-step.pending{background:rgba(255,255,255,.18);}
+body.dark .lp-line.pending{background:rgba(255,255,255,.12);}
+body.dark .lp-step.current{box-shadow:0 0 0 3px rgba(80,140,255,.22);}
+
 /* ── SKELETON LOADER ── */
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 .skel{height:13px;border-radius:7px;background:linear-gradient(90deg,rgba(0,0,0,.06) 25%,rgba(0,0,0,.11) 50%,rgba(0,0,0,.06) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;}

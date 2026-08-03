@@ -225,8 +225,11 @@ async function initWorker() {
 }
 
 window.workerTab = function(tab) {
-  document.getElementById('wtab-scan').style.display   = tab === 'scan'  ? '' : 'none';
-  document.getElementById('wtab-lists').style.display  = tab === 'lists' ? '' : 'none';
+  const scanEl  = document.getElementById('wtab-scan');
+  const listsEl = document.getElementById('wtab-lists');
+  scanEl.style.display  = tab === 'scan'  ? '' : 'none';
+  listsEl.style.display = tab === 'lists' ? '' : 'none';
+  tabEnter(tab === 'scan' ? scanEl : listsEl);
   document.querySelectorAll('.seg-btn').forEach((b,i) =>
     b.classList.toggle('active', (i===0 && tab==='scan') || (i===1 && tab==='lists'))
   );
@@ -541,6 +544,7 @@ function listCardHtml(l) {
       <div class="list-id">${esc(l.id)}</div>
       <div class="list-name">${l.klant ? esc(l.klant) : formatDatum(l.verstuurd_op || l.aangemaakt)}</div>
       <div class="list-meta">${l.klant ? formatDatum(l.verstuurd_op || l.aangemaakt) + ' · ' : ''}${l.aantal_regels} artikel${l.aantal_regels !== 1 ? 'en' : ''} · ${l.totaal_meegenomen} stuks</div>
+      ${listProgressHtml(l.status)}
     </div>
     <span class="badge ${s.cls}"><span class="badge-dot"></span>${s.txt}</span>
     ${l.status==='wacht_retour' ? '<span style="color:var(--text3);font-size:16px">›</span>' : ''}
@@ -673,7 +677,9 @@ function initAdmin() {
 window.adminTab = function(tab) {
   ['lists','verbruik','artikelen','klanten','gebruikers'].forEach(t => {
     const el = document.getElementById('atab-' + t);
-    if (el) el.style.display = t === tab ? '' : 'none';
+    if (!el) return;
+    el.style.display = t === tab ? '' : 'none';
+    if (t === tab) tabEnter(el);
   });
   document.querySelectorAll('.aseg').forEach(b =>
     b.classList.toggle('active', b.dataset.tab === tab)
@@ -688,10 +694,10 @@ window.adminTab = function(tab) {
 async function loadAdminStats() {
   try {
     const s = await API.getStats();
-    document.getElementById('stat-actief').textContent           = s.actief;
-    document.getElementById('stat-wacht').textContent            = s.wacht_retour;
-    document.getElementById('stat-vandaag').textContent          = s.afgerond_vandaag;
-    document.getElementById('stat-wacht-verwerking').textContent = s.wacht_verwerking;
+    animateCount(document.getElementById('stat-actief'),           s.actief);
+    animateCount(document.getElementById('stat-wacht'),            s.wacht_retour);
+    animateCount(document.getElementById('stat-vandaag'),          s.afgerond_vandaag);
+    animateCount(document.getElementById('stat-wacht-verwerking'), s.wacht_verwerking);
   } catch {}
 }
 
@@ -1255,6 +1261,37 @@ window.exportPicklijsten = function() {
 };
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
+function animateCount(el, target, duration = 650) {
+  if (!el) return;
+  if (target === 0) { el.textContent = 0; return; }
+  const start = performance.now();
+  (function tick(now) {
+    const p = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(eased * target);
+    if (p < 1) requestAnimationFrame(tick);
+  })(start);
+}
+
+function listProgressHtml(status) {
+  if (status === 'geannuleerd') return '';
+  const steps = ['actief', 'wacht_retour', 'wacht_verwerking', 'afgerond'];
+  const cur = steps.indexOf(status);
+  return '<div class="list-progress">' +
+    steps.map((_, i) =>
+      (i > 0 ? `<div class="lp-line ${i <= cur ? 'done' : 'pending'}"></div>` : '') +
+      `<div class="lp-step ${i < cur ? 'done' : i === cur ? 'current' : 'pending'}"></div>`
+    ).join('') +
+  '</div>';
+}
+
+function tabEnter(el) {
+  if (!el) return;
+  el.classList.remove('tab-enter');
+  void el.offsetWidth;
+  el.classList.add('tab-enter');
+}
+
 function skeletonRows(rows, cols) {
   const widths = [75, 55, 45, 35, 25];
   return Array(rows).fill(0).map(() =>
