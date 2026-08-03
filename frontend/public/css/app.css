@@ -321,6 +321,15 @@ tbody td { padding:13px 16px; font-size:13px; }
 .skel-row td{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.3);}
 body.dark .skel{background:linear-gradient(90deg,rgba(255,255,255,.07) 25%,rgba(255,255,255,.13) 50%,rgba(255,255,255,.07) 75%);background-size:200% 100%;}
 
+/* ── ARTIKEL SUGGESTIES ── */
+#art-suggestions { margin-top:6px; border-radius:var(--r-md); overflow:hidden; box-shadow:var(--shadow-md); }
+.art-suggest-item { padding:10px 14px; font-size:13px; font-weight:600; cursor:pointer; background:rgba(255,255,255,.65); backdrop-filter:blur(20px); border-bottom:1px solid rgba(255,255,255,.5); transition:background .1s; }
+.art-suggest-item:last-child { border-bottom:none; }
+.art-suggest-item:hover,.art-suggest-item:active { background:rgba(255,255,255,.88); }
+.art-suggest-sub { font-size:11px; color:var(--text3); font-weight:500; margin-top:2px; }
+body.dark .art-suggest-item { background:rgba(255,255,255,.09); border-bottom-color:rgba(255,255,255,.08); }
+body.dark .art-suggest-item:hover { background:rgba(255,255,255,.15); }
+
 /* ── ADMIN ZOEKBALK ── */
 .admin-search{height:38px;flex:1;min-width:120px;max-width:240px;background:rgba(255,255,255,.55);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.75);border-radius:10px;color:var(--text);font-family:'Figtree',sans-serif;font-size:13px;font-weight:500;padding:0 12px;outline:none;transition:box-shadow .15s;}
 .admin-search:focus{box-shadow:0 0 0 2px rgba(28,58,110,.3);}

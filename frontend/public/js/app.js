@@ -280,8 +280,56 @@ document.getElementById('manual-qr-btn')?.addEventListener('click', () => {
 });
 document.getElementById('manual-qr-submit')?.addEventListener('click', () => {
   const val = document.getElementById('manual-qr-input').value.trim();
-  if (val) handleScanResult(val);
+  if (val) { _clearArtSuggestions(); handleScanResult(val); }
 });
+
+// ── ARTIKEL LIVE ZOEKEN ───────────────────────────────────────────────────────
+let _artSuggestions = [];
+let _suggestTimer = null;
+
+document.getElementById('manual-qr-input')?.addEventListener('input', function() {
+  clearTimeout(_suggestTimer);
+  const q = this.value.trim();
+  if (q.length < 2) { _clearArtSuggestions(); return; }
+  _suggestTimer = setTimeout(async () => {
+    try {
+      const arts = await API.getArtikelen(q);
+      _artSuggestions = arts.slice(0, 6);
+      _renderArtSuggestions();
+    } catch { _clearArtSuggestions(); }
+  }, 220);
+});
+
+document.addEventListener('click', e => {
+  if (!document.getElementById('manual-qr-wrap')?.contains(e.target)) {
+    _clearArtSuggestions();
+  }
+});
+
+function _renderArtSuggestions() {
+  const el = document.getElementById('art-suggestions');
+  if (!el) return;
+  el.innerHTML = _artSuggestions.map((a, i) => `
+    <div class="art-suggest-item" onclick="selectArtSuggestie(${i})">
+      <div>${esc(a.naam)}</div>
+      <div class="art-suggest-sub">${esc(a.qr_code)}${a.categorie ? ' · ' + esc(a.categorie) : ''} · ${esc(a.eenheid)}</div>
+    </div>`).join('');
+}
+
+function _clearArtSuggestions() {
+  _artSuggestions = [];
+  const el = document.getElementById('art-suggestions');
+  if (el) el.innerHTML = '';
+}
+
+window.selectArtSuggestie = function(i) {
+  const artikel = _artSuggestions[i];
+  if (!artikel) return;
+  _clearArtSuggestions();
+  document.getElementById('manual-qr-input').value = '';
+  document.getElementById('manual-qr-wrap').style.display = 'none';
+  showScannedArtikel(artikel);
+};
 
 async function handleScanResult(code) {
   try {
@@ -547,7 +595,7 @@ window.openRetour = async function(id) {
       <div class="retour-row"><div class="r-label">Meegenomen</div><div class="r-mono">${r.meegenomen} ${esc(r.eenheid)}</div></div>
       <div class="retour-row">
         <div class="r-label">Teruggekomen</div>
-        <input class="retour-input" id="ri_${i}" data-regel="${r.id}" type="number" value="${r.meegenomen}" min="0" max="${r.meegenomen}"
+        <input class="retour-input" id="ri_${i}" data-regel="${r.id}" data-eenheid="${esc(r.eenheid)}" type="number" value="${r.meegenomen}" min="0" max="${r.meegenomen}"
           oninput="calcV(${i},${r.meegenomen},'${esc(r.eenheid)}')">
         <span style="font-size:12px;color:var(--text3)">${esc(r.eenheid)}</span>
       </div>
@@ -574,6 +622,18 @@ window.calcVSN = function(i) {
   if (!inp || !out) return;
   out.textContent = inp.checked ? 'Ja — geen verbruik' : 'Nee — verbruikt';
   out.style.color = inp.checked ? 'var(--green)' : 'var(--orange)';
+};
+
+window.allesTerug = function() {
+  document.querySelectorAll('#retour-body [data-regel]').forEach((inp, i) => {
+    if (inp.dataset.sn) {
+      inp.checked = true;
+      calcVSN(i);
+    } else {
+      inp.value = inp.max;
+      calcV(i, parseInt(inp.max), inp.dataset.eenheid || '');
+    }
+  });
 };
 
 document.getElementById('retour-confirm')?.addEventListener('click', async () => {

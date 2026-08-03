@@ -165,11 +165,12 @@
         <div id="manual-qr-wrap" style="display:none;margin-bottom:12px;display:none">
           <div style="display:flex;gap:8px">
             <input class="form-input" id="manual-qr-input" style="height:40px;font-size:13px"
-              placeholder="Bijv. ART-001" autocapitalize="characters">
+              placeholder="QR-code of naam…" autocapitalize="characters" autocomplete="off">
             <button class="add-btn" id="manual-qr-submit" style="height:40px;font-size:13px;flex:0 0 80px">
               Zoek
             </button>
           </div>
+          <div id="art-suggestions"></div>
         </div>
 
       </div>
@@ -398,6 +399,10 @@
     <div class="modal-handle"></div>
     <div class="modal-title" id="retour-title">Retour verwerken</div>
     <div class="modal-sub" id="retour-sub"></div>
+    <button id="retour-alles-terug" onclick="allesTerug()"
+      style="width:100%;height:38px;border:1px solid rgba(37,160,106,.3);border-radius:19px;background:rgba(37,160,106,.1);color:var(--green);font-family:'Figtree',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:14px;transition:background .15s">
+      ↩ Alles terug
+    </button>
     <div id="retour-body"></div>
     <div class="hr"></div>
     <button class="send-btn" id="retour-confirm"
