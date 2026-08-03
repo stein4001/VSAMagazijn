@@ -269,6 +269,7 @@
     <!-- PICKLIJSTEN -->
     <div id="atab-lists">
       <div class="filter-row">
+        <input class="admin-search" type="search" placeholder="🔍 Zoek medewerker, klant…" oninput="adminSearch('lists',this.value)">
         <select class="fsel" onchange="filterAdmin(this.value)">
           <option value="">Alle statussen</option>
           <option value="actief">Actief</option>
@@ -306,6 +307,7 @@
     <!-- ARTIKELEN -->
     <div id="atab-artikelen" style="display:none">
       <div class="filter-row">
+        <input class="admin-search" type="search" placeholder="🔍 Zoek artikel, QR-code…" oninput="adminSearch('artikelen',this.value)">
         <button class="add-btn" onclick="openArtikelModal('new')"
           style="height:38px;font-size:13px;flex:0 0 auto;padding:0 20px">
           + Nieuw artikel
@@ -336,6 +338,7 @@
     <!-- KLANTEN -->
     <div id="atab-klanten" style="display:none">
       <div class="filter-row">
+        <input class="admin-search" type="search" placeholder="🔍 Zoek klant…" oninput="adminSearch('klanten',this.value)">
         <button class="add-btn" onclick="openKlantModal('new')"
           style="height:38px;font-size:13px;flex:0 0 auto;padding:0 20px">
           + Nieuwe klant
@@ -362,6 +365,7 @@
     <!-- GEBRUIKERS -->
     <div id="atab-gebruikers" style="display:none">
       <div class="filter-row">
+        <input class="admin-search" type="search" placeholder="🔍 Zoek gebruiker, e-mail…" oninput="adminSearch('gebruikers',this.value)">
         <button class="add-btn" onclick="openGebruikerModal('new')"
           style="height:38px;font-size:13px;flex:0 0 auto;padding:0 20px">
           + Nieuwe gebruiker
@@ -547,6 +551,17 @@
       Bevestig &amp; rond af
     </button>
     <button class="cancel-btn" id="afrond-cancel" style="margin-top:8px">Annuleer</button>
+  </div>
+</div>
+
+<!-- Bevestiging verwijderen modal -->
+<div class="modal-bg" id="confirm-modal">
+  <div class="modal" style="border-radius:var(--r-xl);max-width:340px">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="confirm-title">Weet je het zeker?</div>
+    <div class="modal-sub" id="confirm-msg" style="margin-bottom:20px"></div>
+    <button class="send-btn" id="confirm-ok" style="background:linear-gradient(135deg,var(--red),#c83030);box-shadow:0 6px 24px rgba(232,74,74,.35)">Verwijderen</button>
+    <button class="cancel-btn" id="confirm-cancel" style="margin-top:8px">Annuleer</button>
   </div>
 </div>
 

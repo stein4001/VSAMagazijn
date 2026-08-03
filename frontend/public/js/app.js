@@ -5,10 +5,25 @@ import * as API from './api.js';
 import { Scanner } from './scanner.js';
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
-let activePicklijstId = null;   // huidige werklijst van medewerker
+let activePicklijstId = null;
 let scanner = null;
 let retourListId = null;
 let adminFilter = '';
+
+// Data-caches voor client-side zoekfilter
+let _listsCache = [];
+let _artCache   = [];
+let _klantenCache = [];
+let _gebCache   = [];
+let _searchQ = { lists: '', artikelen: '', klanten: '', gebruikers: '' };
+
+window.adminSearch = function(tab, val) {
+  _searchQ[tab] = val.toLowerCase();
+  if (tab === 'lists')      _renderAdminLists();
+  if (tab === 'artikelen')  _renderArtikelen();
+  if (tab === 'klanten')    _renderKlanten();
+  if (tab === 'gebruikers') _renderGebruikers();
+};
 
 // ── THEMA ─────────────────────────────────────────────────────────────────────
 function applyTheme() {
@@ -486,7 +501,7 @@ function listCardHtml(l) {
 }
 
 window.verwijderEigenLijst = async function(id) {
-  if (!confirm('Lege lijst annuleren?')) return;
+  if (!await confirmDialog('Deze lijst wordt geannuleerd.', { title: 'Lijst annuleren?', okLabel: 'Annuleer lijst' })) return;
   try {
     await API.annuleerPicklijst(id);
     loadMyLists();
@@ -622,41 +637,52 @@ async function loadAdminStats() {
 
 async function loadAdminLists() {
   const body = document.getElementById('admin-tbody');
-  body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">Laden…</td></tr>';
+  body.innerHTML = skeletonRows(5, 7);
   try {
     const params = {};
     if (adminFilter) params.status = adminFilter;
-    const lijsten = await API.getPicklijsten({ ...params, limit: 100 });
-
-    if (!lijsten.length) {
-      body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">Geen lijsten gevonden</td></tr>';
-      return;
-    }
-
-    body.innerHTML = lijsten.map(l => {
-      const s = statusMeta(l.status);
-      return `<tr onclick="toggleExpand('${l.id}')">
-        <td class="td-id" data-label="">${esc(l.id)}</td>
-        <td class="td-bold" data-label="Medewerker">${esc(l.gebruiker_naam)}</td>
-        <td data-label="Klant">${l.klant ? `<span style="font-weight:700">${esc(l.klant)}</span>` : '<span style="color:var(--text3)">—</span>'}</td>
-        <td data-label="Datum" style="font-size:12px;color:var(--text2)">${formatDatum(l.aangemaakt)}</td>
-        <td data-label="Artikelen" style="font-size:12px;color:var(--text2)">${l.aantal_regels} art.</td>
-        <td data-label="Status"><span class="badge ${s.cls}"><span class="badge-dot"></span>${s.txt}</span></td>
-        <td style="display:flex;gap:8px;align-items:center">
-          ${l.status==='wacht_retour'?`<span class="retour-action" onclick="event.stopPropagation();openRetour('${l.id}')">Verwerk ›</span>`:''}
-          ${l.status==='wacht_verwerking'?`<span class="retour-action" style="color:var(--purple)" onclick="event.stopPropagation();openAfronden('${l.id}')">Rond af ›</span>`:''}
-          ${['actief','wacht_retour'].includes(l.status)?`<span class="retour-action" style="color:var(--orange)" onclick="event.stopPropagation();stuurHerinneringVoorLijst('${l.id}')">Herinnering ›</span>`:''}
-          <button class="pick-del" title="Verwijderen" onclick="event.stopPropagation();verwijderPicklijst('${l.id}')">✕</button>
-        </td>
-      </tr>
-      <tr class="expand-row" id="exp-${l.id}">
-        <td colspan="7"><div class="expand-inner">
-          <div class="expand-lbl">Regels</div>
-          <div class="chips" id="chips-${l.id}"><em style="font-size:12px;color:var(--text3)">Laden…</em></div>
-        </div></td>
-      </tr>`;
-    }).join('');
+    _listsCache = await API.getPicklijsten({ ...params, limit: 100 });
+    _renderAdminLists();
   } catch (err) { showToast(err.message, true); }
+}
+
+function _renderAdminLists() {
+  const body = document.getElementById('admin-tbody');
+  const q = _searchQ.lists;
+  const data = q
+    ? _listsCache.filter(l =>
+        (l.gebruiker_naam||'').toLowerCase().includes(q) ||
+        (l.klant||'').toLowerCase().includes(q) ||
+        (l.id||'').toLowerCase().includes(q))
+    : _listsCache;
+
+  if (!data.length) {
+    body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">Geen lijsten gevonden</td></tr>';
+    return;
+  }
+  body.innerHTML = data.map(l => {
+    const s = statusMeta(l.status);
+    return `<tr onclick="toggleExpand('${l.id}')">
+      <td class="td-id" data-label="">${esc(l.id)}</td>
+      <td class="td-bold" data-label="Medewerker">${esc(l.gebruiker_naam)}</td>
+      <td data-label="Klant">${l.klant ? `<span style="font-weight:700">${esc(l.klant)}</span>` : '<span style="color:var(--text3)">—</span>'}</td>
+      <td data-label="Datum" style="font-size:12px;color:var(--text2)">${formatDatum(l.aangemaakt)}</td>
+      <td data-label="Artikelen" style="font-size:12px;color:var(--text2)">${l.aantal_regels} art.</td>
+      <td data-label="Status"><span class="badge ${s.cls}"><span class="badge-dot"></span>${s.txt}</span></td>
+      <td style="display:flex;gap:8px;align-items:center">
+        ${l.status==='wacht_retour'?`<span class="retour-action" onclick="event.stopPropagation();openRetour('${l.id}')">Verwerk ›</span>`:''}
+        ${l.status==='wacht_verwerking'?`<span class="retour-action" style="color:var(--purple)" onclick="event.stopPropagation();openAfronden('${l.id}')">Rond af ›</span>`:''}
+        ${['actief','wacht_retour'].includes(l.status)?`<span class="retour-action" style="color:var(--orange)" onclick="event.stopPropagation();stuurHerinneringVoorLijst('${l.id}')">Herinnering ›</span>`:''}
+        <button class="pick-del" title="Verwijderen" onclick="event.stopPropagation();verwijderPicklijst('${l.id}')">✕</button>
+      </td>
+    </tr>
+    <tr class="expand-row" id="exp-${l.id}">
+      <td colspan="7"><div class="expand-inner">
+        <div class="expand-lbl">Regels</div>
+        <div class="chips" id="chips-${l.id}"><em style="font-size:12px;color:var(--text3)">Laden…</em></div>
+      </div></td>
+    </tr>`;
+  }).join('');
 }
 
 window.toggleExpand = async function(id) {
@@ -692,7 +718,7 @@ window.toggleExpand = async function(id) {
 };
 
 window.verwijderPicklijst = async function(id) {
-  if (!confirm('Picklijst verwijderen? Dit kan niet ongedaan worden gemaakt.')) return;
+  if (!await confirmDialog('Picklijst permanent verwijderen? Dit kan niet ongedaan worden gemaakt.')) return;
   try {
     await API.deletePicklijst(id);
     loadAdminLists();
@@ -742,23 +768,41 @@ let _adminArtMap = {};
 
 async function loadAdminArtikelen() {
   const body = document.getElementById('art-tbody');
-  body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text3)">Laden…</td></tr>';
+  body.innerHTML = skeletonRows(6, 5);
   try {
     const arts = await API.getArtikelen();
     _adminArtMap = {};
     arts.forEach(a => { _adminArtMap[a.id] = a; });
-    body.innerHTML = arts.map((a,i) => `
-      <tr onclick="openArtikelModal('${a.id}')">
-        <td data-label="Naam"><div class="art-cell">
-          <div class="art-thumb" style="background:${artBg[i%artBg.length]}">${artIcons[a.categorie] || '📦'}</div>
-          <span class="td-bold">${esc(a.naam)}</span>
-        </div></td>
-        <td data-label="QR" class="td-id">${esc(a.qr_code)}</td>
-        <td data-label="Eenheid" style="color:var(--text2)">${esc(a.eenheid)}</td>
-        <td data-label="Categorie" style="color:var(--text2)">${esc(a.categorie||'—')}</td>
-        <td data-label=""><button class="btn-dymo" title="DYMO label exporteren" onclick="event.stopPropagation();dymoExport('${a.id}')">DYMO</button></td>
-      </tr>`).join('');
+    _artCache = arts;
+    _renderArtikelen();
   } catch (err) { showToast(err.message, true); }
+}
+
+function _renderArtikelen() {
+  const body = document.getElementById('art-tbody');
+  const q = _searchQ.artikelen;
+  const data = q
+    ? _artCache.filter(a =>
+        (a.naam||'').toLowerCase().includes(q) ||
+        (a.qr_code||'').toLowerCase().includes(q) ||
+        (a.categorie||'').toLowerCase().includes(q))
+    : _artCache;
+
+  if (!data.length) {
+    body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text3)">Geen artikelen gevonden</td></tr>';
+    return;
+  }
+  body.innerHTML = data.map((a,i) => `
+    <tr onclick="openArtikelModal('${a.id}')">
+      <td data-label="Naam"><div class="art-cell">
+        <div class="art-thumb" style="background:${artBg[i%artBg.length]}">${artIcons[a.categorie] || '📦'}</div>
+        <span class="td-bold">${esc(a.naam)}</span>
+      </div></td>
+      <td data-label="QR" class="td-id">${esc(a.qr_code)}</td>
+      <td data-label="Eenheid" style="color:var(--text2)">${esc(a.eenheid)}</td>
+      <td data-label="Categorie" style="color:var(--text2)">${esc(a.categorie||'—')}</td>
+      <td data-label=""><button class="btn-dymo" title="DYMO label exporteren" onclick="event.stopPropagation();dymoExport('${a.id}')">DYMO</button></td>
+    </tr>`).join('');
 }
 
 function _dymoCsvRows(artikelen) {
@@ -799,7 +843,7 @@ window.dymoExportAll = function() {
 window.verwijderArtikelVanuitModal = async function() {
   const id = document.getElementById('art-id').value;
   const naam = document.getElementById('art-naam').value;
-  if (!confirm(`Artikel "${naam}" verwijderen? Dit kan niet ongedaan worden gemaakt.`)) return;
+  if (!await confirmDialog(`Artikel "${naam}" permanent verwijderen?`)) return;
   try {
     await API.deleteArtikel(id);
     document.getElementById('art-modal').classList.remove('open');
@@ -855,22 +899,32 @@ document.getElementById('art-modal-close')?.addEventListener('click', () =>
 
 async function loadKlanten() {
   const body = document.getElementById('klant-tbody');
-  body.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--text3)">Laden…</td></tr>';
+  body.innerHTML = skeletonRows(4, 3);
   try {
-    const klanten = await API.getKlanten();
-    if (!klanten.length) {
-      body.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--text3)">Geen klanten gevonden.</td></tr>';
-      return;
-    }
-    body.innerHTML = klanten.map(k => `
-      <tr>
-        <td class="td-bold" data-label="Naam">${esc(k.naam)}</td>
-        <td data-label="Notities" style="color:var(--text2);font-size:12px">${k.notities ? esc(k.notities) : '<span style="color:var(--text3)">—</span>'}</td>
-        <td style="display:flex;gap:8px;align-items:center">
-          <button class="retour-action" style="background:none;border:none;padding:0;margin-left:auto" onclick="openKlantModal('${k.id}')">Wijzig ›</button>
-        </td>
-      </tr>`).join('');
+    _klantenCache = await API.getKlanten();
+    _renderKlanten();
   } catch (err) { showToast(err.message, true); }
+}
+
+function _renderKlanten() {
+  const body = document.getElementById('klant-tbody');
+  const q = _searchQ.klanten;
+  const data = q
+    ? _klantenCache.filter(k => (k.naam||'').toLowerCase().includes(q) || (k.notities||'').toLowerCase().includes(q))
+    : _klantenCache;
+
+  if (!data.length) {
+    body.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--text3)">Geen klanten gevonden.</td></tr>';
+    return;
+  }
+  body.innerHTML = data.map(k => `
+    <tr>
+      <td class="td-bold" data-label="Naam">${esc(k.naam)}</td>
+      <td data-label="Notities" style="color:var(--text2);font-size:12px">${k.notities ? esc(k.notities) : '<span style="color:var(--text3)">—</span>'}</td>
+      <td style="display:flex;gap:8px;align-items:center">
+        <button class="retour-action" style="background:none;border:none;padding:0;margin-left:auto" onclick="openKlantModal('${k.id}')">Wijzig ›</button>
+      </td>
+    </tr>`).join('');
 }
 
 window.openKlantModal = async function(id) {
@@ -891,7 +945,7 @@ window.openKlantModal = async function(id) {
 window.verwijderKlantVanuitModal = async function() {
   const id = document.getElementById('klant-id').value;
   const naam = document.getElementById('klant-naam').value;
-  if (!confirm(`Klant "${naam}" verwijderen?`)) return;
+  if (!await confirmDialog(`Klant "${naam}" verwijderen?`)) return;
   try {
     await API.deleteKlant(id);
     document.getElementById('klant-modal').classList.remove('open');
@@ -944,36 +998,43 @@ let toonInactieveGebruikers = false;
 
 async function loadGebruikers() {
   const body = document.getElementById('geb-tbody');
-  body.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text3)">Laden…</td></tr>';
+  body.innerHTML = skeletonRows(4, 4);
   try {
-    const alleUsers = await API.getGebruikers();
-    const users = toonInactieveGebruikers ? alleUsers : alleUsers.filter(u => u.actief);
-
+    _gebCache = await API.getGebruikers();
     const toggleBtn = document.getElementById('geb-toon-inactief-btn');
-    if (toggleBtn) {
-      toggleBtn.textContent = toonInactieveGebruikers ? 'Verberg inactieven' : 'Toon inactieven';
-    }
-
-    if (users.length === 0) {
-      body.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text3)">Geen gebruikers gevonden.</td></tr>';
-      return;
-    }
-    body.innerHTML = users.map(u => `
-      <tr>
-        <td class="td-bold" data-label="Naam">${esc(u.naam)}</td>
-        <td data-label="E-mail" style="color:var(--text2);font-size:12px">${esc(u.email)}</td>
-        <td data-label="Rol"><span class="badge ${u.rol==='admin'?'b-purple':'b-blue'}" style="${u.rol==='admin'?'background:rgba(139,92,246,.12);color:#8b5cf6;':''}">${u.rol}</span></td>
-        <td data-label="Status" style="display:flex;gap:8px;align-items:center">
-          <span class="badge ${u.actief?'b-green':'b-orange'}">${u.actief?'Actief':'Inactief'}</span>
-          <button class="retour-action" style="background:none;border:none;padding:0;margin-left:auto" onclick="openGebruikerModal('${u.id}')">Wijzig ›</button>
-        </td>
-      </tr>`).join('');
+    if (toggleBtn) toggleBtn.textContent = toonInactieveGebruikers ? 'Verberg inactieven' : 'Toon inactieven';
+    _renderGebruikers();
   } catch (err) { showToast(err.message, true); }
+}
+
+function _renderGebruikers() {
+  const body = document.getElementById('geb-tbody');
+  const q = _searchQ.gebruikers;
+  let data = toonInactieveGebruikers ? _gebCache : _gebCache.filter(u => u.actief);
+  if (q) data = data.filter(u =>
+    (u.naam||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q));
+
+  if (!data.length) {
+    body.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text3)">Geen gebruikers gevonden.</td></tr>';
+    return;
+  }
+  body.innerHTML = data.map(u => `
+    <tr>
+      <td class="td-bold" data-label="Naam">${esc(u.naam)}</td>
+      <td data-label="E-mail" style="color:var(--text2);font-size:12px">${esc(u.email)}</td>
+      <td data-label="Rol"><span class="badge ${u.rol==='admin'?'b-purple':'b-blue'}" style="${u.rol==='admin'?'background:rgba(139,92,246,.12);color:#8b5cf6;':''}">${u.rol}</span></td>
+      <td data-label="Status" style="display:flex;gap:8px;align-items:center">
+        <span class="badge ${u.actief?'b-green':'b-orange'}">${u.actief?'Actief':'Inactief'}</span>
+        <button class="retour-action" style="background:none;border:none;padding:0;margin-left:auto" onclick="openGebruikerModal('${u.id}')">Wijzig ›</button>
+      </td>
+    </tr>`).join('');
 }
 
 window.toggleInactieveGebruikers = function() {
   toonInactieveGebruikers = !toonInactieveGebruikers;
-  loadGebruikers();
+  const toggleBtn = document.getElementById('geb-toon-inactief-btn');
+  if (toggleBtn) toggleBtn.textContent = toonInactieveGebruikers ? 'Verberg inactieven' : 'Toon inactieven';
+  _renderGebruikers();
 };
 
 window.openGebruikerModal = async function(id) {
@@ -1001,7 +1062,7 @@ window.openGebruikerModal = async function(id) {
 window.verwijderGebruikerVanuitModal = async function() {
   const id = document.getElementById('geb-id').value;
   const naam = document.getElementById('geb-naam').value;
-  if (!confirm(`Gebruiker "${naam}" definitief verwijderen? Dit kan niet ongedaan worden gemaakt.`)) return;
+  if (!await confirmDialog(`Gebruiker "${naam}" definitief verwijderen?`)) return;
   try {
     await API.deleteGebruiker(id);
     document.getElementById('geb-modal').classList.remove('open');
@@ -1134,6 +1195,34 @@ window.exportPicklijsten = function() {
 };
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
+function skeletonRows(rows, cols) {
+  const widths = [75, 55, 45, 35, 25];
+  return Array(rows).fill(0).map(() =>
+    `<tr class="skel-row">${Array(cols).fill(0).map((_,i) =>
+      `<td><div class="skel" style="width:${widths[i % widths.length]}%"></div></td>`
+    ).join('')}</tr>`
+  ).join('');
+}
+
+function confirmDialog(msg, { title = 'Weet je het zeker?', okLabel = 'Verwijderen' } = {}) {
+  return new Promise(resolve => {
+    document.getElementById('confirm-title').textContent = title;
+    document.getElementById('confirm-msg').textContent   = msg;
+    document.getElementById('confirm-ok').textContent    = okLabel;
+    const modal = document.getElementById('confirm-modal');
+    modal.classList.add('open');
+    let settled = false;
+    function finish(val) {
+      if (settled) return; settled = true;
+      modal.classList.remove('open');
+      resolve(val);
+    }
+    document.getElementById('confirm-ok').addEventListener('click', () => finish(true),  { once: true });
+    document.getElementById('confirm-cancel').addEventListener('click', () => finish(false), { once: true });
+    modal.addEventListener('click', e => { if (e.target === modal) finish(false); }, { once: true });
+  });
+}
+
 function statusMeta(status) {
   return {
     actief:            { cls:'b-blue',   txt:'Actief'               },
