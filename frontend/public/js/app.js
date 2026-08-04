@@ -214,6 +214,7 @@ window.initAdmin  = initAdmin;
 async function initWorker() {
   document.getElementById('klant-input').value = '';
   workerTab('scan');
+  vulKlantenDatalist();
   try {
     const lijsten = await API.getPicklijsten({ status: 'actief', limit: 1 });
     if (lijsten.length) {
@@ -451,8 +452,6 @@ document.getElementById('qty-modal')?.addEventListener('click', e => {
 });
 
 // ── KLANT ────────────────────────────────────────────────────────────────────
-document.getElementById('klant-input')?.addEventListener('focus', () => vulKlantenDatalist());
-
 document.getElementById('klant-input')?.addEventListener('blur', async () => {
   if (!activePicklijstId) return;
   const input = document.getElementById('klant-input');
