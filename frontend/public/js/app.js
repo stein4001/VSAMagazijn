@@ -452,8 +452,13 @@ document.getElementById('qty-modal')?.addEventListener('click', e => {
 });
 
 // ── KLANT ────────────────────────────────────────────────────────────────────
+document.getElementById('klant-input')?.addEventListener('input', function() {
+  _renderKlantDropdown(_klantSuggesties(this.value), 'klant-input', 'klant-suggestions');
+});
+
 document.getElementById('klant-input')?.addEventListener('blur', async () => {
   const input = document.getElementById('klant-input');
+  setTimeout(() => { document.getElementById('klant-suggestions').innerHTML = ''; }, 150);
   const getypt = input.value.trim();
   if (!getypt) return;
   const klant = matchKlantNaam(getypt);
@@ -515,8 +520,7 @@ function openVerstuurModal() {
     document.getElementById('pick-count')?.textContent || '';
   document.getElementById('verstuur-klant').value = klant;
   document.getElementById('verstuur-notities').value = '';
-  const dl = document.getElementById('verstuur-klant-datalist');
-  if (dl) dl.innerHTML = document.getElementById('klant-datalist')?.innerHTML || '';
+  document.getElementById('verstuur-klant-suggestions').innerHTML = '';
   document.getElementById('verstuur-modal').classList.add('open');
   setTimeout(() => {
     if (!klant) document.getElementById('verstuur-klant').focus();
@@ -524,13 +528,27 @@ function openVerstuurModal() {
   }, 320);
 }
 
+document.getElementById('verstuur-klant')?.addEventListener('input', function() {
+  _renderKlantDropdown(_klantSuggesties(this.value), 'verstuur-klant', 'verstuur-klant-suggestions');
+});
+document.getElementById('verstuur-klant')?.addEventListener('blur', () => {
+  setTimeout(() => { document.getElementById('verstuur-klant-suggestions').innerHTML = ''; }, 150);
+});
+
 document.getElementById('verstuur-modal-confirm')?.addEventListener('click', async () => {
-  const klant = document.getElementById('verstuur-klant').value.trim();
-  if (!klant) {
+  const ingevoerd = document.getElementById('verstuur-klant').value.trim();
+  if (!ingevoerd) {
     showToast('Vul eerst een klant in', true);
     document.getElementById('verstuur-klant').focus();
     return;
   }
+  const klantMatch = _klanten.find(k => k.naam.toLowerCase() === ingevoerd.toLowerCase());
+  if (!klantMatch) {
+    showToast('Kies een bestaande klant uit de lijst', true);
+    document.getElementById('verstuur-klant').focus();
+    return;
+  }
+  const klant = klantMatch.naam;
   const notities = document.getElementById('verstuur-notities').value.trim() || null;
   const btn = document.getElementById('verstuur-modal-confirm');
   btn.disabled = true;
@@ -1086,11 +1104,7 @@ document.getElementById('klant-modal-close')?.addEventListener('click', () =>
 let _klanten = [];
 
 async function vulKlantenDatalist() {
-  try {
-    _klanten = await API.getKlanten();
-    const dl = document.getElementById('klant-datalist');
-    if (dl) dl.innerHTML = _klanten.map(k => `<option value="${esc(k.naam)}">`).join('');
-  } catch {}
+  try { _klanten = await API.getKlanten(); } catch {}
 }
 
 function matchKlantNaam(invoer) {
@@ -1101,6 +1115,27 @@ function matchKlantNaam(invoer) {
   const deels = _klanten.filter(k => k.naam.toLowerCase().includes(lower));
   return deels.length === 1 ? deels[0].naam : invoer;
 }
+
+function _klantSuggesties(query) {
+  if (!query) return [];
+  const q = query.toLowerCase();
+  return _klanten.filter(k => k.naam.toLowerCase().includes(q)).slice(0, 6);
+}
+
+function _renderKlantDropdown(results, inputId, dropdownId) {
+  const el = document.getElementById(dropdownId);
+  if (!el) return;
+  el.innerHTML = results.map(k => `
+    <div class="art-suggest-item" onmousedown="selectKlant('${esc(k.naam)}','${inputId}','${dropdownId}')">
+      ${esc(k.naam)}
+      ${k.notities ? `<div class="art-suggest-sub">${esc(k.notities)}</div>` : ''}
+    </div>`).join('');
+}
+
+window.selectKlant = function(naam, inputId, dropdownId) {
+  document.getElementById(inputId).value = naam;
+  document.getElementById(dropdownId).innerHTML = '';
+};
 
 // ── ADMIN GEBRUIKERS ──────────────────────────────────────────────────────────
 let toonInactieveGebruikers = false;

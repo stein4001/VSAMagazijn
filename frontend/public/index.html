@@ -183,8 +183,8 @@
           <span class="pill-count" id="pick-count">0 artikelen</span>
         </div>
         <div style="margin-bottom:12px">
-          <input class="form-input" id="klant-input" placeholder="Klant (verplicht)" list="klant-datalist" autocomplete="off" style="height:38px;font-size:13px">
-          <datalist id="klant-datalist"></datalist>
+          <input class="form-input" id="klant-input" placeholder="Klant (verplicht)" autocomplete="off" style="height:38px;font-size:13px">
+          <div id="klant-suggestions"></div>
         </div>
         <div id="pick-items">
           <div class="list-empty">Scan een artikel om te beginnen</div>
@@ -383,9 +383,8 @@
     <div class="modal-sub" id="verstuur-modal-sub" style="margin-bottom:18px"></div>
     <div class="form-group">
       <label class="form-label">Klant</label>
-      <input class="form-input" id="verstuur-klant" placeholder="Klantnaam (verplicht)"
-        list="verstuur-klant-datalist" autocomplete="off">
-      <datalist id="verstuur-klant-datalist"></datalist>
+      <input class="form-input" id="verstuur-klant" placeholder="Klantnaam (verplicht)" autocomplete="off">
+      <div id="verstuur-klant-suggestions"></div>
     </div>
     <div class="form-group">
       <label class="form-label">Notities
