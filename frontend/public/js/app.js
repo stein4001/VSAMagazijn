@@ -10,6 +10,7 @@ let scanner = null;
 let retourListId = null;
 let adminFilter = '';
 let _currentArtikel = null;
+let _activeKlant = '';
 
 // Data-caches voor client-side zoekfilter
 let _listsCache = [];
@@ -212,14 +213,14 @@ window.initAdmin  = initAdmin;
 // MEDEWERKER
 // ══════════════════════════════════════════════════════════════════════════════
 async function initWorker() {
-  document.getElementById('klant-input').value = '';
+  _activeKlant = '';
   workerTab('scan');
   vulKlantenDatalist();
   try {
     const lijsten = await API.getPicklijsten({ status: 'actief', limit: 1 });
     if (lijsten.length) {
       activePicklijstId = lijsten[0].id;
-      if (lijsten[0].klant) document.getElementById('klant-input').value = lijsten[0].klant;
+      _activeKlant = lijsten[0].klant || '';
       await renderPicklist();
       showToast('↩ Actieve lijst hervat');
     }
@@ -425,8 +426,7 @@ document.getElementById('qty-modal-add')?.addEventListener('click', async () => 
   btn.disabled = true;
   try {
     if (!activePicklijstId) {
-      const klant = document.getElementById('klant-input').value.trim();
-      const lijst = await API.createPicklijst(klant ? { klant } : {});
+      const lijst = await API.createPicklijst({});
       activePicklijstId = lijst.id;
     }
     const regelBody = { artikel_id: _currentArtikel.id, meegenomen: qty };
@@ -452,20 +452,6 @@ document.getElementById('qty-modal')?.addEventListener('click', e => {
 });
 
 // ── KLANT ────────────────────────────────────────────────────────────────────
-document.getElementById('klant-input')?.addEventListener('input', function() {
-  _renderKlantDropdown(_klantSuggesties(this.value), 'klant-input', 'klant-suggestions');
-});
-
-document.getElementById('klant-input')?.addEventListener('blur', async () => {
-  const input = document.getElementById('klant-input');
-  setTimeout(() => { document.getElementById('klant-suggestions').innerHTML = ''; }, 150);
-  const getypt = input.value.trim();
-  if (!getypt) return;
-  const klant = matchKlantNaam(getypt);
-  if (klant !== getypt) input.value = klant;
-  if (!activePicklijstId) return;
-  try { await API.updatePicklijst(activePicklijstId, { klant: klant || null }); } catch {}
-});
 
 // ── PICKLIJST ─────────────────────────────────────────────────────────────────
 
@@ -515,15 +501,14 @@ document.getElementById('send-btn')?.addEventListener('click', () => {
 });
 
 function openVerstuurModal() {
-  const klant = document.getElementById('klant-input').value.trim();
   document.getElementById('verstuur-modal-sub').textContent =
     document.getElementById('pick-count')?.textContent || '';
-  document.getElementById('verstuur-klant').value = klant;
+  document.getElementById('verstuur-klant').value = _activeKlant;
   document.getElementById('verstuur-notities').value = '';
   document.getElementById('verstuur-klant-suggestions').innerHTML = '';
   document.getElementById('verstuur-modal').classList.add('open');
   setTimeout(() => {
-    if (!klant) document.getElementById('verstuur-klant').focus();
+    if (!_activeKlant) document.getElementById('verstuur-klant').focus();
     else document.getElementById('verstuur-notities').focus();
   }, 320);
 }
@@ -554,10 +539,10 @@ document.getElementById('verstuur-modal-confirm')?.addEventListener('click', asy
   btn.disabled = true;
   try {
     await API.updatePicklijst(activePicklijstId, { klant, notities });
-    document.getElementById('klant-input').value = klant;
     await API.verstuurPicklijst(activePicklijstId);
     document.getElementById('verstuur-modal').classList.remove('open');
     activePicklijstId = null;
+    _activeKlant = '';
     await renderPicklist();
     showToast('✓ Picklijst verstuurd');
   } catch (err) {
@@ -627,7 +612,7 @@ window.resumePicklijst = async function(id) {
   workerTab('scan');
   try {
     const lijst = await API.getPicklijst(id);
-    if (lijst.klant) document.getElementById('klant-input').value = lijst.klant;
+    _activeKlant = lijst.klant || '';
   } catch {}
   await renderPicklist();
 };
