@@ -453,11 +453,12 @@ document.getElementById('qty-modal')?.addEventListener('click', e => {
 
 // ── KLANT ────────────────────────────────────────────────────────────────────
 document.getElementById('klant-input')?.addEventListener('blur', async () => {
-  if (!activePicklijstId) return;
   const input = document.getElementById('klant-input');
   const getypt = input.value.trim();
+  if (!getypt) return;
   const klant = matchKlantNaam(getypt);
   if (klant !== getypt) input.value = klant;
+  if (!activePicklijstId) return;
   try { await API.updatePicklijst(activePicklijstId, { klant: klant || null }); } catch {}
 });
 
