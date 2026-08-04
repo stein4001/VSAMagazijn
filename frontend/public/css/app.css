@@ -344,7 +344,7 @@ body.dark .lp-step.current{box-shadow:0 0 0 3px rgba(80,140,255,.22);}
 body.dark .skel{background:linear-gradient(90deg,rgba(255,255,255,.07) 25%,rgba(255,255,255,.13) 50%,rgba(255,255,255,.07) 75%);background-size:200% 100%;}
 
 /* ── ARTIKEL SUGGESTIES ── */
-#art-suggestions { margin-top:6px; border-radius:var(--r-md); overflow:hidden; box-shadow:var(--shadow-md); }
+#art-suggestions, #verstuur-klant-suggestions { margin-top:6px; border-radius:var(--r-md); overflow:hidden; box-shadow:var(--shadow-md); }
 .art-suggest-item { padding:10px 14px; font-size:13px; font-weight:600; cursor:pointer; background:rgba(255,255,255,.65); backdrop-filter:blur(20px); border-bottom:1px solid rgba(255,255,255,.5); transition:background .1s; }
 .art-suggest-item:last-child { border-bottom:none; }
 .art-suggest-item:hover,.art-suggest-item:active { background:rgba(255,255,255,.88); }
