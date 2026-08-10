@@ -541,6 +541,7 @@ document.getElementById('verstuur-modal-confirm')?.addEventListener('click', asy
     await API.updatePicklijst(activePicklijstId, { klant, notities });
     await API.verstuurPicklijst(activePicklijstId);
     document.getElementById('verstuur-modal').classList.remove('open');
+    btn.disabled = false;
     activePicklijstId = null;
     _activeKlant = '';
     await renderPicklist();
@@ -700,6 +701,7 @@ document.getElementById('retour-confirm')?.addEventListener('click', async () =>
   try {
     await API.verwerkRetour(retourListId, regels);
     document.getElementById('retour-modal').classList.remove('open');
+    btn.disabled = false;
     loadMyLists();
     showToast('✓ Retour verwerkt');
   } catch (err) {

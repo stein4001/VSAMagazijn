@@ -20,11 +20,16 @@ magazijn/
 │   ├── server.js              # Express entrypoint, poort 3000
 │   ├── db.js                  # SQLite singleton + auto-migrations bij opstarten
 │   ├── auth.js                # JWT sign/verify + middleware requireAuth/requireAdmin
-│   └── routes/
-│       ├── auth.js            # POST /api/auth/login, GET /api/auth/me
-│       ├── artikelen.js       # CRUD + QR-image + CSV import/export
-│       ├── picklijsten.js     # Lifecycle + admin stats/verbruik/export
-│       └── gebruikers.js      # Gebruikersbeheer (admin only)
+│   ├── cron.js                # Geplande taken (dagelijks 08:00 herinnering openstaande lijsten)
+│   ├── routes/
+│   │   ├── auth.js            # POST /api/auth/login, GET /api/auth/me, Microsoft OAuth
+│   │   ├── artikelen.js       # CRUD + QR-image + CSV import/export
+│   │   ├── picklijsten.js     # Lifecycle + admin stats/verbruik/export
+│   │   ├── gebruikers.js      # Gebruikersbeheer (admin only)
+│   │   └── klanten.js         # Klantenbeheer + CSV import/export
+│   └── services/
+│       ├── mail.js            # Microsoft Graph API mail-verzending
+│       └── notificaties.js    # E-mail templates (nieuwe lijst, afgerond, herinnering)
 ├── frontend/public/
 │   ├── index.html             # SPA shell, alle schermen inline
 │   ├── manifest.json          # PWA manifest
@@ -33,7 +38,8 @@ magazijn/
 │   └── js/
 │       ├── app.js             # Hoofdlogica, scherm-routing, alle event handlers
 │       ├── api.js             # Centrale fetch-wrapper, auth state, alle API calls
-│       └── scanner.js         # jsQR + getUserMedia wrapper (requestAnimationFrame loop)
+│       ├── scanner.js         # jsQR + getUserMedia wrapper (requestAnimationFrame loop)
+│       └── artikel-grid.js    # Artikel-grid voor snel toevoegen zonder scannen
 ├── scripts/
 │   ├── setup-db.js            # Eenmalig: database + tabellen aanmaken
 │   └── seed.js                # Demo gebruikers + artikelen invoeren
@@ -66,14 +72,18 @@ App draait op http://localhost:3000
 
 ## Database schema
 ```sql
-gebruikers       (id, naam, email, wachtwoord, rol, actief, aangemaakt)
+gebruikers       (id, naam, email, wachtwoord, rol, actief, aangemaakt, microsoft_id, auth_methode)
+                 -- auth_methode: 'beide' | 'microsoft' | 'local'  (default: 'beide')
 artikelen        (id, naam, omschrijving, qr_code, eenheid, categorie, min_voorraad, actief, aangemaakt)
                  -- eenheid = 'SN' → serienummer-flow (aparte UI bij scannen)
-picklijsten      (id, gebruiker_id, status, klant, notities, projectnummer, aangemaakt, verstuurd_op, gesloten_op)
+picklijsten      (id, gebruiker_id, status, klant, notities, projectnummer, aangemaakt, verstuurd_op, gesloten_op, herinnering_gestuurd)
                  -- status: actief | wacht_retour | wacht_verwerking | afgerond | geannuleerd
+                 -- herinnering_gestuurd: datetime van laatste herinnerings-mail (cron vult in)
 picklijst_regels (id, picklijst_id, artikel_id, serienummer, meegenomen, teruggekomen, verbruik, aangemaakt, bijgewerkt)
                  -- verbruik = meegenomen - teruggekomen (berekend bij retour)
                  -- serienummer: alleen ingevuld als artikel.eenheid = 'SN'
+klanten          (id, naam, notities, aangemaakt)
+                 -- unieke klantnamen; naam wordt ook opgeslagen in picklijsten.klant
 ```
 
 Auto-migrations draaien bij elke start in `backend/db.js` (try/catch per ALTER TABLE).
@@ -90,6 +100,8 @@ aanmaken → [actief] → verstuur → [wacht_retour] → retour verwerken → [
 ```
 POST   /api/auth/login
 GET    /api/auth/me
+GET    /api/auth/microsoft                       ← redirect naar Microsoft OAuth login
+GET    /api/auth/microsoft/callback              ← OAuth callback; redirect naar /?ms_token=...
 
 GET    /api/artikelen?q=zoekterm&categorie=
 GET    /api/artikelen/categorieen/lijst          ← distinct categorieën (datalist)
@@ -121,6 +133,13 @@ GET    /api/gebruikers                           ← admin
 POST   /api/gebruikers                           ← admin
 PUT    /api/gebruikers/:id                       ← admin
 DELETE /api/gebruikers/:id                       ← admin (soft delete)
+
+GET    /api/klanten                              ← alle ingelogde gebruikers (autocomplete)
+POST   /api/klanten                              ← admin
+PUT    /api/klanten/:id                          ← admin; naam-wijziging doorvoeren in picklijsten
+DELETE /api/klanten/:id                          ← admin (hard delete)
+GET    /api/klanten/export/csv                   ← CSV download (admin)
+POST   /api/klanten/import/csv                   ← CSV upsert op naam (admin), body = text/plain
 ```
 
 ## Frontend architectuur
@@ -134,9 +153,11 @@ DELETE /api/gebruikers/:id                       ← admin (soft delete)
   - `scan-video` + `scan-canvas` elementen in `#scan-vp`
   - `resetScanVP()` altijd aanroepen bij tab-switch om knop terug te zetten
   - `stopScanner()` stopt de mediastream
+- `artikel-grid.js`: artikel-grid voor snel toevoegen zonder scannen (top-6 artikelen)
+- Microsoft SSO: login-pagina redirect naar `/api/auth/microsoft`; callback geeft `?ms_token=` + `?ms_user=` queryparams terug die app.js verwerkt
 - Authenticated CSV-download: `downloadCsv(url, filename)` via fetch+blob (geen token in URL)
 - SN-artikelen: eenheid = 'SN' → bij scannen serienummer-invoer, bij retour checkbox i.p.v. getal
-- Klant-veld: zichtbaar bovenaan de picklijst (bewerkbaar zolang actief)
+- Klant-veld: zichtbaar bovenaan de picklijst (bewerkbaar zolang actief); klantenlijst via `/api/klanten` voor autocomplete
 - Admin afronden: modal met projectnummer-invoer → POST /:id/afronden
 
 ## Design systeem (CSS variabelen)
@@ -191,7 +212,7 @@ pm2 logs magazijn --lines 100
 ```
 
 ## Geplande uitbreidingen (backlog)
-- [ ] Push notificaties als lijst te lang open staat (> X uur)
+- [x] E-mail herinnering als lijst te lang open staat (cron dagelijks 08:00, via `NOTIF_LIJST_MAX_DAGEN`)
 - [ ] Voorraadbeheer module (huidige voorraad bijhouden)
 - [ ] Meerdere locaties / magazijnen per account
 - [ ] Barcode scanner ondersteuning (naast QR)
@@ -202,8 +223,20 @@ pm2 logs magazijn --lines 100
 ## Omgevingsvariabelen
 ```
 PORT=3000
-JWT_SECRET=...           # minimaal 32 tekens, willekeurig
-NODE_ENV=production      # of development
+JWT_SECRET=...                   # minimaal 32 tekens, willekeurig
+NODE_ENV=production              # of development
+CORS_ORIGIN=https://jouwdomein.nl
+
+# E-mail via Microsoft Graph (optioneel — vereist voor notificaties en herinneringen)
+MAIL_FROM=magazijn@jouwdomein.nl
+NOTIF_ADMIN_EMAIL=admin@jouwdomein.nl
+NOTIF_LIJST_MAX_DAGEN=3          # na hoeveel dagen wacht_retour een herinnering stuurt
+
+# Microsoft SSO (optioneel — zie README sectie 7)
+AZURE_TENANT_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+AZURE_CLIENT_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+AZURE_CLIENT_SECRET=...
+AZURE_REDIRECT_URI=https://jouwdomein.nl/api/auth/microsoft/callback
 ```
 
 ## Deployment (productie, Linux VPS)

@@ -278,31 +278,62 @@ Per gebruiker is in de admin UI instelbaar welke inlogmethode is toegestaan:
 ## API Endpoints
 
 ### Auth
-| Methode | Pad              | Beschrijving         |
-|---------|------------------|----------------------|
-| POST    | /api/auth/login  | Inloggen             |
-| GET     | /api/auth/me     | Eigen profiel        |
+| Methode | Pad                            | Beschrijving                        |
+|---------|--------------------------------|-------------------------------------|
+| POST    | /api/auth/login                | Inloggen met wachtwoord             |
+| GET     | /api/auth/me                   | Eigen profiel                       |
+| GET     | /api/auth/microsoft            | Start Microsoft OAuth login         |
+| GET     | /api/auth/microsoft/callback   | OAuth callback (Microsoft)          |
 
 ### Artikelen
-| Methode | Pad                         | Beschrijving              |
-|---------|-----------------------------|---------------------------|
-| GET     | /api/artikelen              | Lijst alle artikelen      |
-| GET     | /api/artikelen/qr/:code     | Zoek op QR code           |
-| GET     | /api/artikelen/:id/qr-image | Genereer QR PNG           |
-| POST    | /api/artikelen              | Nieuw artikel (admin)     |
-| PUT     | /api/artikelen/:id          | Wijzig artikel (admin)    |
+| Methode | Pad                              | Beschrijving                      |
+|---------|----------------------------------|-----------------------------------|
+| GET     | /api/artikelen                   | Lijst alle artikelen              |
+| GET     | /api/artikelen/categorieen/lijst | Distinct categorieën (datalist)   |
+| GET     | /api/artikelen/qr/:code          | Zoek op QR code                   |
+| GET     | /api/artikelen/:id/qr-image      | Genereer QR PNG                   |
+| GET     | /api/artikelen/export/csv        | CSV download (admin)              |
+| POST    | /api/artikelen/import/csv        | CSV upsert op qr_code (admin)     |
+| POST    | /api/artikelen                   | Nieuw artikel                     |
+| PUT     | /api/artikelen/:id               | Wijzig artikel (admin)            |
+| DELETE  | /api/artikelen/:id               | Soft delete (admin)               |
 
 ### Picklijsten
-| Methode | Pad                              | Beschrijving                  |
-|---------|----------------------------------|-------------------------------|
-| GET     | /api/picklijsten                 | Overzicht lijsten             |
-| POST    | /api/picklijsten                 | Nieuwe lijst starten          |
-| POST    | /api/picklijsten/:id/regels      | Artikel toevoegen             |
-| DELETE  | /api/picklijsten/:id/regels/:rid | Artikel verwijderen           |
-| POST    | /api/picklijsten/:id/verstuur    | Verstuur lijst                |
-| POST    | /api/picklijsten/:id/retour      | Retour verwerken              |
-| GET     | /api/picklijsten/admin/stats     | Dashboard stats (admin)       |
-| GET     | /api/picklijsten/admin/verbruik  | Verbruik per artikel (admin)  |
+| Methode | Pad                                        | Beschrijving                        |
+|---------|--------------------------------------------|-------------------------------------|
+| GET     | /api/picklijsten                           | Overzicht lijsten                   |
+| GET     | /api/picklijsten/:id                       | Detail + regels                     |
+| POST    | /api/picklijsten                           | Nieuwe lijst starten                |
+| PATCH   | /api/picklijsten/:id                       | Klant / notities bijwerken          |
+| DELETE  | /api/picklijsten/:id                       | Hard delete (admin)                 |
+| POST    | /api/picklijsten/:id/regels                | Artikel toevoegen                   |
+| DELETE  | /api/picklijsten/:id/regels/:rid           | Artikel verwijderen                 |
+| POST    | /api/picklijsten/:id/verstuur              | Verstuur lijst                      |
+| POST    | /api/picklijsten/:id/retour                | Retour verwerken                    |
+| POST    | /api/picklijsten/:id/afronden              | Admin: bevestig + projectnummer     |
+| POST    | /api/picklijsten/:id/annuleer              | Medewerker: annuleer actieve lijst  |
+| GET     | /api/picklijsten/admin/stats               | Dashboard stats (admin)             |
+| GET     | /api/picklijsten/admin/verbruik            | Verbruik per artikel (admin)        |
+| GET     | /api/picklijsten/admin/verbruik-per-medewerker | Verbruik per medewerker (admin) |
+| GET     | /api/picklijsten/admin/export              | Flat CSV alle regels (admin)        |
+
+### Gebruikers
+| Methode | Pad                  | Beschrijving            |
+|---------|----------------------|-------------------------|
+| GET     | /api/gebruikers      | Lijst (admin)           |
+| POST    | /api/gebruikers      | Aanmaken (admin)        |
+| PUT     | /api/gebruikers/:id  | Wijzigen (admin)        |
+| DELETE  | /api/gebruikers/:id  | Soft delete (admin)     |
+
+### Klanten
+| Methode | Pad                        | Beschrijving                        |
+|---------|----------------------------|-------------------------------------|
+| GET     | /api/klanten               | Lijst (alle ingelogden, autocomplete)|
+| POST    | /api/klanten               | Aanmaken (admin)                    |
+| PUT     | /api/klanten/:id           | Wijzigen (admin)                    |
+| DELETE  | /api/klanten/:id           | Verwijderen (admin)                 |
+| GET     | /api/klanten/export/csv    | CSV download (admin)                |
+| POST    | /api/klanten/import/csv    | CSV upsert op naam (admin)          |
 
 ---
 
@@ -312,15 +343,20 @@ Per gebruiker is in de admin UI instelbaar welke inlogmethode is toegestaan:
 magazijn/
 ├── backend/
 │   ├── server.js            # Express server (entrypoint)
-│   ├── db.js                # SQLite database verbinding
+│   ├── db.js                # SQLite database verbinding + auto-migrations
 │   ├── auth.js              # JWT auth middleware
+│   ├── cron.js              # Geplande taken (dagelijkse herinneringsmails)
 │   ├── data/
 │   │   └── magazijn.db      # SQLite database (aangemaakt door setup)
-│   └── routes/
-│       ├── auth.js          # Login, /me
-│       ├── artikelen.js     # CRUD artikelen + QR generatie
-│       ├── picklijsten.js   # Picklijst lifecycle + admin stats
-│       └── gebruikers.js    # Gebruikersbeheer (admin)
+│   ├── routes/
+│   │   ├── auth.js          # Login, /me, Microsoft OAuth
+│   │   ├── artikelen.js     # CRUD artikelen + QR generatie + CSV
+│   │   ├── picklijsten.js   # Picklijst lifecycle + admin stats
+│   │   ├── gebruikers.js    # Gebruikersbeheer (admin)
+│   │   └── klanten.js       # Klantenbeheer + CSV import/export
+│   └── services/
+│       ├── mail.js          # Microsoft Graph mail-verzending
+│       └── notificaties.js  # E-mail templates
 ├── frontend/
 │   └── public/
 │       ├── index.html       # SPA shell
@@ -329,9 +365,10 @@ magazijn/
 │       ├── css/
 │       │   └── app.css      # iOS 26 Liquid Glass design
 │       └── js/
-│           ├── app.js       # Hoofdapplicatie logica
-│           ├── api.js       # API client (alle fetch calls)
-│           └── scanner.js   # QR camera scanner wrapper
+│           ├── app.js           # Hoofdapplicatie logica
+│           ├── api.js           # API client (alle fetch calls)
+│           ├── scanner.js       # QR camera scanner wrapper
+│           └── artikel-grid.js  # Artikel-grid voor snel toevoegen
 ├── scripts/
 │   ├── setup-db.js          # Database aanmaken (run 1x)
 │   └── seed.js              # Demo data invoeren
